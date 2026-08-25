@@ -3,11 +3,11 @@
   let fadeExpanded = localStorage.getItem(STORAGE_KEY) !== "false";
 
   const statusRank = {
-    "idea": 1,
-    "planned": 2,
-    "ready": 3,
-    "active": 4,
-    "blocked": 5,
+    idea: 1,
+    planned: 2,
+    ready: 3,
+    active: 4,
+    blocked: 5,
     "needs-decision": 6,
   };
 
@@ -20,49 +20,64 @@
     document.head.appendChild(link);
   }
 
-  function directChildren(node) {
-    const wrap = Array.from(node.children).find((child) => child.classList.contains("workgraph-node-children-wrap"));
-    const branch = wrap?.querySelector(":scope > .workgraph-children");
-    return branch ? Array.from(branch.children).filter((child) => child.classList.contains("workgraph-node")) : [];
+  function graphNodes() {
+    return typeof workGraphState !== "undefined" ? workGraphState.nodes : [];
   }
 
-  function rawStatus(node) {
-    return node.querySelector(":scope > .workgraph-content .workgraph-status")?.textContent?.trim().toLowerCase().replace(/\s+/g, "-") || "planned";
+  function childrenOf(id) {
+    return graphNodes().filter((node) => node.parentId === id);
   }
 
-  function rolledStatus(node) {
-    const children = directChildren(node);
-    if (!children.length) return rawStatus(node);
+  function rollupStatus(id, visiting = new Set()) {
+    if (visiting.has(id)) return "planned";
+    visiting.add(id);
 
-    const childStatuses = children.map(rolledStatus);
+    const node = graphNodes().find((item) => item.id === id);
+    if (!node) return "planned";
+
+    const children = childrenOf(id);
+    if (!children.length) return node.status || "planned";
+
+    const childStatuses = children.map((child) => rollupStatus(child.id, new Set(visiting)));
     if (childStatuses.every((status) => status === "done")) return "done";
 
-    const candidates = [rawStatus(node), ...childStatuses].filter((status) => statusRank[status]);
-    return candidates.reduce((highest, status) =>
-      (statusRank[status] || 0) > (statusRank[highest] || 0) ? status : highest,
+    const candidates = [node.status, ...childStatuses].filter((status) => statusRank[status]);
+    return candidates.reduce(
+      (highest, status) => ((statusRank[status] || 0) > (statusRank[highest] || 0) ? status : highest),
       "planned",
     );
   }
 
   function applyStatusRollup() {
-    document.querySelectorAll("#workgraph-tree > .workgraph-node").forEach((root) => {
+    if (typeof workGraphState === "undefined") return;
+
+    const effectiveById = new Map();
+    graphNodes().filter((node) => node.parentId == null).forEach((root) => {
       const visit = (node) => {
-        directChildren(node).forEach(visit);
-        const effective = rolledStatus(node);
-        const badge = node.querySelector(":scope > .workgraph-content .workgraph-status");
-        if (!badge) return;
-        badge.textContent = effective.replaceAll("-", " ").toUpperCase();
-        badge.dataset.rolledStatus = effective;
-        node.dataset.effectiveStatus = effective;
+        effectiveById.set(node.id, rollupStatus(node.id));
+        childrenOf(node.id).forEach(visit);
       };
       visit(root);
+    });
+
+    document.querySelectorAll("#workgraph-tree .workgraph-node").forEach((element) => {
+      const nodeId = element.dataset.nodeId;
+      const effective = effectiveById.get(nodeId);
+      if (!effective) return;
+      const badge = element.querySelector(":scope > .workgraph-content .workgraph-status");
+      if (!badge) return;
+      const label = effective.replaceAll("-", " ").toUpperCase();
+      if (badge.textContent !== label) badge.textContent = label;
+      if (badge.dataset.rolledStatus !== effective) badge.dataset.rolledStatus = effective;
+      if (element.dataset.effectiveStatus !== effective) element.dataset.effectiveStatus = effective;
     });
   }
 
   function setExpandedMarkers() {
     document.querySelectorAll("#workgraph-tree .workgraph-node").forEach((node) => {
-      const children = directChildren(node);
-      node.classList.toggle("expanded", children.length > 0 && !children[0]?.parentElement?.hidden);
+      const wrap = Array.from(node.children).find((child) => child.classList.contains("workgraph-node-children-wrap"));
+      const branch = wrap?.querySelector(":scope > .workgraph-children");
+      node.classList.toggle("expanded", Boolean(branch));
     });
     applyStatusRollup();
   }
@@ -109,7 +124,19 @@
 
     const tree = document.querySelector("#workgraph-tree");
     if (tree) {
-      new MutationObserver(() => setExpandedMarkers()).observe(tree, { childList: true, subtree: true });
+      const observer = new MutationObserver((mutations) => {
+        const hasStructuralChange = mutations.some((mutation) =>
+          [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
+            node.nodeType === Node.ELEMENT_NODE && (
+              node.classList.contains("workgraph-node") ||
+              node.classList.contains("workgraph-node-children-wrap") ||
+              node.querySelector?.(".workgraph-node")
+            ),
+          ),
+        );
+        if (hasStructuralChange) setExpandedMarkers();
+      });
+      observer.observe(tree, { childList: true, subtree: true });
     }
   }
 
