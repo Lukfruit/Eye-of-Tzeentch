@@ -180,6 +180,46 @@
       "status": "needs-decision",
       "priority": 3,
       "kind": "decision"
+    },
+    {
+      "id": "wg-1787679761961-qbgoc",
+      "parentId": "work-graph",
+      "title": "title is duplicated",
+      "why": "",
+      "notes": "",
+      "status": "planned",
+      "priority": 1,
+      "kind": "task"
+    },
+    {
+      "id": "wg-1787679831837-xsz8u",
+      "parentId": "wg-1787679761961-qbgoc",
+      "title": "statuses should have different visual intensity depending on the importance",
+      "why": "",
+      "notes": "",
+      "status": "planned",
+      "priority": 1,
+      "kind": "task"
+    },
+    {
+      "id": "wg-1787679876393-6w7c4",
+      "parentId": "work-graph-hierarchy",
+      "title": "goals shouldn't switch focus on create of a child or decision node",
+      "why": "",
+      "notes": "",
+      "status": "planned",
+      "priority": 1,
+      "kind": "task"
+    },
+    {
+      "id": "wg-1787679919431-ir0x5",
+      "parentId": "work-graph",
+      "title": "references should be \"objects\" and should be clickable",
+      "why": "",
+      "notes": "",
+      "status": "planned",
+      "priority": 1,
+      "kind": "task"
     }
   ]
 }
