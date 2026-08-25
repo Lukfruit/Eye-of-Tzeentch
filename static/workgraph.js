@@ -165,6 +165,7 @@ function renderNode(node, depth = 0) {
   const article = document.createElement("article");
   article.className = `workgraph-node ${expanded && children.length ? "expanded" : ""}`;
   article.dataset.depth = depth;
+  article.dataset.nodeId = node.id;
   article.style.setProperty("--work-color", nodeColor(node));
 
   const rail = document.createElement("div");
