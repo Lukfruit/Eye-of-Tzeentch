@@ -1,10 +1,8 @@
-const baseWorkGraphStoreKey = "cyber-soul-work-graph";
-
 const workGraphState = {
   nodes: [],
   selected: null,
   expanded: new Set(),
-  projectKey: "default",
+  projectPath: "",
 };
 
 const workGraphDefaults = [
@@ -23,37 +21,47 @@ const workGraphDefaults = [
 function wg$(selector) { return document.querySelector(selector); }
 function wgEscape(value = "") { return String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c])); }
 
-function currentProjectKey() {
+function currentProjectPath() {
   const inputPath = wg$("#project-path")?.value?.trim();
   const queryPath = new URLSearchParams(window.location.search).get("path")?.trim();
-  const path = inputPath || queryPath || "default";
-  return path.replace(/\\/g, "/").replace(/\/$/, "").toLowerCase();
+  return inputPath || queryPath || "";
 }
 
-function workGraphStorageKey(projectKey = currentProjectKey()) {
-  return `${baseWorkGraphStoreKey}:${projectKey}`;
-}
-
-function loadWorkGraph() {
-  workGraphState.projectKey = currentProjectKey();
+async function loadWorkGraph() {
+  workGraphState.projectPath = currentProjectPath();
+  if (!workGraphState.projectPath) return structuredClone(workGraphDefaults);
   try {
-    const parsed = JSON.parse(localStorage.getItem(workGraphStorageKey()) || "null");
-    if (Array.isArray(parsed) && parsed.length) return parsed;
-  } catch (_) {}
+    const response = await fetch(`/api/workgraph?path=${encodeURIComponent(workGraphState.projectPath)}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const parsed = await response.json();
+    if (Array.isArray(parsed.nodes) && parsed.nodes.length) return parsed.nodes;
+  } catch (error) {
+    console.warn("[workgraph] failed to load project graph", error);
+  }
   return structuredClone(workGraphDefaults);
 }
 
-function saveWorkGraph() {
-  localStorage.setItem(workGraphStorageKey(workGraphState.projectKey), JSON.stringify(workGraphState.nodes));
+async function saveWorkGraph() {
+  if (!workGraphState.projectPath) return;
+  try {
+    const response = await fetch("/api/workgraph", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: workGraphState.projectPath, graph: { version: 1, project: workGraphState.projectPath, nodes: workGraphState.nodes } }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  } catch (error) {
+    console.error("[workgraph] failed to save project graph", error);
+  }
 }
 
-function reloadForProject() {
-  const nextKey = currentProjectKey();
-  if (nextKey === workGraphState.projectKey) return;
-  workGraphState.projectKey = nextKey;
-  workGraphState.nodes = loadWorkGraph();
+async function reloadForProject() {
+  const nextPath = currentProjectPath();
+  if (nextPath === workGraphState.projectPath && workGraphState.nodes.length) return;
+  workGraphState.projectPath = nextPath;
+  workGraphState.nodes = await loadWorkGraph();
   workGraphState.selected = null;
-  workGraphState.expanded = new Set(["root-project"]);
+  workGraphState.expanded = new Set([workGraphState.nodes[0]?.id || "root-project"]);
   renderWorkGraph();
 }
 
@@ -104,7 +112,7 @@ function addChild(parentId, kind = "task") {
   workGraphState.nodes.push(node);
   if (parentId) workGraphState.expanded.add(parentId);
   workGraphState.selected = node.id;
-  saveWorkGraph();
+  void saveWorkGraph();
   renderWorkGraph();
 }
 
@@ -112,15 +120,15 @@ function updateNode(id, patch) {
   const node = workGraphState.nodes.find((item) => item.id === id);
   if (!node) return;
   Object.assign(node, patch);
-  saveWorkGraph();
+  void saveWorkGraph();
 }
 
 function deleteNode(id) {
-  if (id === "root-project") return;
+  if (id === "root-project" || id === workGraphState.nodes[0]?.id) return;
   const doomed = new Set([id, ...descendantsOf(id).map((node) => node.id)]);
   workGraphState.nodes = workGraphState.nodes.filter((node) => !doomed.has(node.id));
   workGraphState.selected = null;
-  saveWorkGraph();
+  void saveWorkGraph();
   renderWorkGraph();
 }
 
@@ -139,10 +147,11 @@ function renderNode(node, depth = 0) {
 
   const content = document.createElement("div");
   content.className = `workgraph-content ${selected ? "selected" : ""}`;
+  const refs = Array.isArray(node.references) && node.references.length ? ` · ${node.references.length} REF${node.references.length === 1 ? "" : "S"}` : "";
   content.innerHTML = `
     <div class="workgraph-node-main" role="button" tabindex="0">
       <button class="workgraph-expand" type="button" aria-label="${expanded ? "Collapse" : "Expand"}">${children.length ? (expanded ? "−" : "+") : "·"}</button>
-      <span class="workgraph-title"><strong>${wgEscape(node.title)}</strong><small>${node.kind === "decision" ? "DECISION" : node.why ? wgEscape(node.why) : ""}</small></span>
+      <span class="workgraph-title"><strong>${wgEscape(node.title)}</strong><small>${node.kind === "decision" ? "DECISION" : node.why ? wgEscape(node.why) : ""}${refs}</small></span>
       <span class="workgraph-meta"><span class="workgraph-priority">P${node.priority ?? 5}</span><span class="workgraph-status ${wgEscape(node.status)}">${statusLabel(node.status)}</span></span>
     </div>
   `;
@@ -188,6 +197,9 @@ function renderInspector() {
   }
 
   const descendants = descendantsOf(node.id);
+  const refs = Array.isArray(node.references) && node.references.length
+    ? `<div class="data-field"><label>REFERENCES</label><div class="workgraph-reference-list">${node.references.map((ref) => `<code>${wgEscape(ref)}</code>`).join("")}</div></div>`
+    : "";
   host.innerHTML = `
     <div class="panel-kicker"><span>02</span> WORK INSPECTOR</div>
     <h3>${wgEscape(node.title)}</h3>
@@ -197,12 +209,13 @@ function renderInspector() {
       ${["idea","planned","ready","active","waiting","blocked","needs-decision","verification","done","cancelled","superseded"].map((status) => `<option value="${status}" ${node.status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}
     </select></div>
     <div class="data-field"><label>PRIORITY</label><input id="wg-priority" class="workgraph-notes" style="min-height:42px" type="number" min="1" max="9" value="${node.priority ?? 5}"></div>
-    <div class="data-field"><label>PROJECT</label><p style="margin:0;color:rgba(220,235,241,.65);font:12px/1.5 'IBM Plex Mono',monospace;word-break:break-all">${wgEscape(workGraphState.projectKey)}</p></div>
+    <div class="data-field"><label>PROJECT</label><p style="margin:0;color:rgba(220,235,241,.65);font:12px/1.5 'IBM Plex Mono',monospace;word-break:break-all">${wgEscape(workGraphState.projectPath || "—")}</p></div>
+    ${refs}
     <div class="data-field"><label>DOWNSTREAM</label><p style="margin:0;color:rgba(220,235,241,.65);font:12px/1.5 'IBM Plex Mono',monospace">${descendants.length} descendant work item${descendants.length === 1 ? "" : "s"}</p></div>
     <div class="workgraph-actions" style="margin-top:18px;justify-content:flex-start">
       <button id="wg-add-child" class="hud-button hot">ADD CHILD</button>
       <button id="wg-add-decision" class="hud-button">ADD DECISION</button>
-      ${node.id !== "root-project" ? '<button id="wg-delete" class="hud-button">DELETE</button>' : ''}
+      ${node.id !== "root-project" && node.id !== workGraphState.nodes[0]?.id ? '<button id="wg-delete" class="hud-button">DELETE</button>' : ''}
     </div>`;
 
   wg$("#wg-why").value = node.why || "";
@@ -228,23 +241,19 @@ function setWorkGraphActive(active) {
   document.body.classList.toggle("workgraph-active", active);
   wg$("#workgraph-view")?.classList.toggle("active", active);
   document.querySelectorAll(".workgraph-tab").forEach((button) => button.classList.toggle("active", button.dataset.view === (active ? "workgraph" : "analysis")));
-  if (active) {
-    reloadForProject();
-    renderWorkGraph();
-  }
+  if (active) renderWorkGraph();
 }
 
-function initWorkGraph() {
-  workGraphState.projectKey = currentProjectKey();
-  workGraphState.nodes = loadWorkGraph();
-  workGraphState.expanded.add("root-project");
+async function initWorkGraph() {
+  workGraphState.projectPath = currentProjectPath();
+  workGraphState.nodes = await loadWorkGraph();
+  if (!workGraphState.nodes.length) workGraphState.nodes = structuredClone(workGraphDefaults);
+  workGraphState.expanded.add(workGraphState.nodes[0]?.id || "root-project");
 
   wg$("#workgraph-add-root")?.addEventListener("click", () => addChild(null, "goal"));
   document.querySelectorAll(".workgraph-tab").forEach((button) => button.addEventListener("click", () => setWorkGraphActive(button.dataset.view === "workgraph")));
-  wg$("#project-form")?.addEventListener("submit", () => {
-    window.setTimeout(() => reloadForProject(), 300);
-  });
-  wg$("#project-path")?.addEventListener("change", () => reloadForProject());
+  wg$("#project-form")?.addEventListener("submit", () => window.setTimeout(() => { void reloadForProject(); }, 100));
+  wg$("#project-path")?.addEventListener("change", () => { void reloadForProject(); });
   renderWorkGraph();
 }
 
