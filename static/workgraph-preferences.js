@@ -1,6 +1,5 @@
 (() => {
   const STORAGE_KEY = "cyber-soul-workgraph-fade-expanded";
-  const enabledByDefault = true;
   let fadeExpanded = localStorage.getItem(STORAGE_KEY) !== "false";
 
   function ensureStylesheet() {
@@ -66,5 +65,9 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", init, { once: true });
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
 })();
