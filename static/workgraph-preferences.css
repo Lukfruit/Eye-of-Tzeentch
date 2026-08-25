@@ -10,6 +10,29 @@ body.wg-fade-expanded .workgraph-node.expanded > .workgraph-content.selected {
   filter: saturate(0.9);
 }
 
+/* Rolled-up subtree state. */
+#workgraph-tree .workgraph-node[data-effective-status="needs-decision"] > .workgraph-content .workgraph-status {
+  color: #ff5e89;
+}
+#workgraph-tree .workgraph-node[data-effective-status="blocked"] > .workgraph-content .workgraph-status {
+  color: #ff5e89;
+}
+#workgraph-tree .workgraph-node[data-effective-status="active"] > .workgraph-content .workgraph-status {
+  color: #9cff32;
+}
+#workgraph-tree .workgraph-node[data-effective-status="ready"] > .workgraph-content .workgraph-status {
+  color: #45d9ff;
+}
+#workgraph-tree .workgraph-node[data-effective-status="planned"] > .workgraph-content .workgraph-status {
+  color: #7f8cff;
+}
+#workgraph-tree .workgraph-node[data-effective-status="idea"] > .workgraph-content .workgraph-status {
+  color: #a663ff;
+}
+#workgraph-tree .workgraph-node[data-effective-status="done"] > .workgraph-content .workgraph-status {
+  color: #42f5d4;
+}
+
 .workgraph-preference {
   width: 100%;
   display: grid;
