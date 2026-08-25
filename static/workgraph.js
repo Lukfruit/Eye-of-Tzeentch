@@ -35,7 +35,9 @@ function saveWorkGraph() {
 }
 
 function childrenOf(parentId) {
-  return workGraphState.nodes.filter((node) => node.parentId === parentId).sort((a, b) => (a.priority ?? 5) - (b.priority ?? 5) || a.title.localeCompare(b.title));
+  return workGraphState.nodes
+    .filter((node) => node.parentId === parentId)
+    .sort((a, b) => (a.priority ?? 5) - (b.priority ?? 5) || a.title.localeCompare(b.title));
 }
 
 function descendantsOf(id) {
@@ -77,7 +79,7 @@ function addChild(parentId, kind = "task") {
     kind,
   };
   workGraphState.nodes.push(node);
-  workGraphState.expanded.add(parentId);
+  if (parentId) workGraphState.expanded.add(parentId);
   workGraphState.selected = node.id;
   saveWorkGraph();
   renderWorkGraph();
@@ -115,11 +117,11 @@ function renderNode(node, depth = 0) {
   const content = document.createElement("div");
   content.className = `workgraph-content ${selected ? "selected" : ""}`;
   content.innerHTML = `
-    <button class="workgraph-node-main" type="button">
+    <div class="workgraph-node-main" role="button" tabindex="0">
       <button class="workgraph-expand" type="button" aria-label="${expanded ? "Collapse" : "Expand"}">${children.length ? (expanded ? "−" : "+") : "·"}</button>
       <span class="workgraph-title"><strong>${wgEscape(node.title)}</strong><small>${node.kind === "decision" ? "DECISION" : node.why ? wgEscape(node.why) : ""}</small></span>
       <span class="workgraph-meta"><span class="workgraph-priority">P${node.priority ?? 5}</span><span class="workgraph-status ${wgEscape(node.status)}">${statusLabel(node.status)}</span></span>
-    </button>
+    </div>
   `;
   const main = content.querySelector(".workgraph-node-main");
   const expand = content.querySelector(".workgraph-expand");
@@ -131,6 +133,12 @@ function renderNode(node, depth = 0) {
     renderWorkGraph();
   });
   main.addEventListener("click", () => setSelected(node.id));
+  main.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setSelected(node.id);
+    }
+  });
 
   article.append(rail, content);
 
@@ -160,8 +168,8 @@ function renderInspector() {
   host.innerHTML = `
     <div class="panel-kicker"><span>02</span> WORK INSPECTOR</div>
     <h3>${wgEscape(node.title)}</h3>
-    <div class="data-field"><label>WHY</label><textarea id="wg-why" class="workgraph-notes" placeholder="Why does this work exist?">${wgEscape(node.why || "")}</textarea></div>
-    <div class="data-field"><label>NOTES</label><textarea id="wg-notes" class="workgraph-notes" placeholder="Optional context, evidence, decisions…">${wgEscape(node.notes || "")}</textarea></div>
+    <div class="data-field"><label>WHY</label><textarea id="wg-why" class="workgraph-notes" placeholder="Why does this work exist?"></textarea></div>
+    <div class="data-field"><label>NOTES</label><textarea id="wg-notes" class="workgraph-notes" placeholder="Optional context, evidence, decisions…"></textarea></div>
     <div class="data-field"><label>STATUS</label><select id="wg-status" class="workgraph-notes" style="min-height:42px">
       ${["idea","planned","ready","active","waiting","blocked","needs-decision","verification","done","cancelled","superseded"].map((status) => `<option value="${status}" ${node.status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}
     </select></div>
@@ -173,6 +181,8 @@ function renderInspector() {
       ${node.id !== "root-project" ? '<button id="wg-delete" class="hud-button">DELETE</button>' : ''}
     </div>`;
 
+  wg$("#wg-why").value = node.why || "";
+  wg$("#wg-notes").value = node.notes || "";
   wg$("#wg-why").addEventListener("input", (event) => updateNode(node.id, { why: event.target.value }));
   wg$("#wg-notes").addEventListener("input", (event) => updateNode(node.id, { notes: event.target.value }));
   wg$("#wg-status").addEventListener("change", (event) => { updateNode(node.id, { status: event.target.value }); renderWorkGraph(); });
@@ -186,30 +196,23 @@ function renderWorkGraph() {
   const tree = wg$("#workgraph-tree");
   if (!tree) return;
   tree.replaceChildren();
-  const roots = childrenOf(null);
-  roots.forEach((node) => tree.appendChild(renderNode(node)));
+  childrenOf(null).forEach((node) => tree.appendChild(renderNode(node)));
   renderInspector();
 }
 
 function setWorkGraphActive(active) {
   document.body.classList.toggle("workgraph-active", active);
   wg$("#workgraph-view")?.classList.toggle("active", active);
-  $$(".workgraph-tab").forEach((button) => button.classList.toggle("active", button.dataset.view === (active ? "workgraph" : "analysis")));
+  document.querySelectorAll(".workgraph-tab").forEach((button) => button.classList.toggle("active", button.dataset.view === (active ? "workgraph" : "analysis")));
   if (active) renderWorkGraph();
 }
-
-function $$(selector) { return [...document.querySelectorAll(selector)]; }
 
 function initWorkGraph() {
   workGraphState.nodes = loadWorkGraph();
   workGraphState.expanded.add("root-project");
 
   wg$("#workgraph-add-root")?.addEventListener("click", () => addChild(null, "goal"));
-  wg$("#workgraph-view")?.addEventListener("click", (event) => {
-    const tab = event.target.closest(".workgraph-tab");
-    if (tab) setWorkGraphActive(tab.dataset.view === "workgraph");
-  });
-  $$(".workgraph-tab").forEach((button) => button.addEventListener("click", () => setWorkGraphActive(button.dataset.view === "workgraph")));
+  document.querySelectorAll(".workgraph-tab").forEach((button) => button.addEventListener("click", () => setWorkGraphActive(button.dataset.view === "workgraph")));
   renderWorkGraph();
 }
 
