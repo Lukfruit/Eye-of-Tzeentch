@@ -78,6 +78,22 @@ function descendantsOf(id) {
   return result;
 }
 
+function graphIdForNode(nodeId) {
+  const segments = [];
+  let current = workGraphState.nodes.find((node) => node.id === nodeId);
+  const guard = new Set();
+  while (current && !guard.has(current.id)) {
+    guard.add(current.id);
+    const siblings = childrenOf(current.parentId);
+    const index = Math.max(0, siblings.findIndex((node) => node.id === current.id)) + 1;
+    segments.unshift(index);
+    current = current.parentId == null
+      ? null
+      : workGraphState.nodes.find((node) => node.id === current.parentId) || null;
+  }
+  return segments.length ? `P${segments.join("-")}` : "P1";
+}
+
 function statusLabel(status) {
   return String(status || "planned").replaceAll("-", " ").toUpperCase();
 }
@@ -148,11 +164,12 @@ function renderNode(node, depth = 0) {
   const content = document.createElement("div");
   content.className = `workgraph-content ${selected ? "selected" : ""}`;
   const refs = Array.isArray(node.references) && node.references.length ? ` · ${node.references.length} REF${node.references.length === 1 ? "" : "S"}` : "";
+  const graphId = graphIdForNode(node.id);
   content.innerHTML = `
     <div class="workgraph-node-main" role="button" tabindex="0">
       <button class="workgraph-expand" type="button" aria-label="${expanded ? "Collapse" : "Expand"}">${children.length ? (expanded ? "−" : "+") : "·"}</button>
       <span class="workgraph-title"><strong>${wgEscape(node.title)}</strong><small>${node.kind === "decision" ? "DECISION" : node.why ? wgEscape(node.why) : ""}${refs}</small></span>
-      <span class="workgraph-meta"><span class="workgraph-priority">P${node.priority ?? 5}</span><span class="workgraph-status ${wgEscape(node.status)}">${statusLabel(node.status)}</span></span>
+      <span class="workgraph-meta"><span class="workgraph-priority">${graphId}</span><span class="workgraph-status ${wgEscape(node.status)}">${statusLabel(node.status)}</span></span>
     </div>
   `;
   const main = content.querySelector(".workgraph-node-main");
@@ -203,6 +220,7 @@ function renderInspector() {
   host.innerHTML = `
     <div class="panel-kicker"><span>02</span> WORK INSPECTOR</div>
     <h3>${wgEscape(node.title)}</h3>
+    <div class="data-field"><label>GRAPH ID</label><p style="margin:0;color:#9cff32;font:12px 'IBM Plex Mono',monospace">${graphIdForNode(node.id)}</p></div>
     <div class="data-field"><label>WHY</label><textarea id="wg-why" class="workgraph-notes" placeholder="Why does this work exist?"></textarea></div>
     <div class="data-field"><label>NOTES</label><textarea id="wg-notes" class="workgraph-notes" placeholder="Optional context, evidence, decisions…"></textarea></div>
     <div class="data-field"><label>STATUS</label><select id="wg-status" class="workgraph-notes" style="min-height:42px">
