@@ -19,7 +19,7 @@ const workGraphDefaults = [
 ];
 
 function wg$(selector) { return document.querySelector(selector); }
-function wgEscape(value = "") { return String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c])); }
+function wgEscape(value = "") { return String(value).replace(/[&<>'\"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '\"': "&quot;" }[c])); }
 
 function currentProjectPath() {
   const inputPath = wg$("#project-path")?.value?.trim();
@@ -111,6 +111,16 @@ function setSelected(id) {
   renderWorkGraph();
 }
 
+function toggleNodeExpanded(id) {
+  const node = workGraphState.nodes.find((item) => item.id === id);
+  if (!node) return;
+  const children = childrenOf(id);
+  if (!children.length) return;
+  if (workGraphState.expanded.has(id)) workGraphState.expanded.delete(id);
+  else workGraphState.expanded.add(id);
+  renderWorkGraph();
+}
+
 function addChild(parentId, kind = "task") {
   const title = window.prompt(kind === "decision" ? "Decision question" : "New work item");
   if (!title?.trim()) return;
@@ -177,11 +187,14 @@ function renderNode(node, depth = 0) {
   expand.disabled = !children.length;
   expand.addEventListener("click", (event) => {
     event.stopPropagation();
-    if (!children.length) return;
-    if (expanded) workGraphState.expanded.delete(node.id); else workGraphState.expanded.add(node.id);
-    renderWorkGraph();
+    toggleNodeExpanded(node.id);
   });
   main.addEventListener("click", () => setSelected(node.id));
+  main.addEventListener("dblclick", (event) => {
+    event.preventDefault();
+    if (!children.length) return;
+    toggleNodeExpanded(node.id);
+  });
   main.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
