@@ -19,7 +19,7 @@ const workGraphDefaults = [
 ];
 
 function wg$(selector) { return document.querySelector(selector); }
-function wgEscape(value = "") { return String(value).replace(/[&<>'\"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '\"': "&quot;" }[c])); }
+function wgEscape(value = "") { return String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '\"': "&quot;" }[c])); }
 
 function currentProjectPath() {
   const inputPath = wg$("#project-path")?.value?.trim();
@@ -234,6 +234,7 @@ function renderInspector() {
     <div class="panel-kicker"><span>02</span> WORK INSPECTOR</div>
     <h3>${wgEscape(node.title)}</h3>
     <div class="data-field"><label>GRAPH ID</label><p style="margin:0;color:#9cff32;font:12px 'IBM Plex Mono',monospace">${graphIdForNode(node.id)}</p></div>
+    <div class="data-field"><label>TITLE</label><input id="wg-title" class="workgraph-notes" style="min-height:42px" type="text" value="${wgEscape(node.title)}" placeholder="Work item title"></div>
     <div class="data-field"><label>WHY</label><textarea id="wg-why" class="workgraph-notes" placeholder="Why does this work exist?"></textarea></div>
     <div class="data-field"><label>NOTES</label><textarea id="wg-notes" class="workgraph-notes" placeholder="Optional context, evidence, decisions…"></textarea></div>
     <div class="data-field"><label>STATUS</label><select id="wg-status" class="workgraph-notes" style="min-height:42px">
@@ -249,8 +250,15 @@ function renderInspector() {
       ${node.id !== "root-project" && node.id !== workGraphState.nodes[0]?.id ? '<button id="wg-delete" class="hud-button">DELETE</button>' : ''}
     </div>`;
 
+  wg$("#wg-title").value = node.title || "";
   wg$("#wg-why").value = node.why || "";
   wg$("#wg-notes").value = node.notes || "";
+  wg$("#wg-title").addEventListener("change", (event) => {
+    const title = event.target.value.trim();
+    if (!title) { event.target.value = node.title || ""; return; }
+    updateNode(node.id, { title });
+    renderWorkGraph();
+  });
   wg$("#wg-why").addEventListener("input", (event) => updateNode(node.id, { why: event.target.value }));
   wg$("#wg-notes").addEventListener("input", (event) => updateNode(node.id, { notes: event.target.value }));
   wg$("#wg-status").addEventListener("change", (event) => { updateNode(node.id, { status: event.target.value }); renderWorkGraph(); });
