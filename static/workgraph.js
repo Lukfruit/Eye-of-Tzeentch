@@ -137,7 +137,7 @@ function renderNode(node, depth = 0) {
   const expanded = workGraphState.expanded.has(node.id);
   const selected = workGraphState.selected === node.id;
   const article = document.createElement("article");
-  article.className = "workgraph-node";
+  article.className = `workgraph-node ${expanded && children.length ? "expanded" : ""}`;
   article.dataset.depth = depth;
   article.style.setProperty("--work-color", nodeColor(node));
 
@@ -244,7 +244,16 @@ function setWorkGraphActive(active) {
   if (active) renderWorkGraph();
 }
 
+function ensureWorkGraphPreferences() {
+  if (document.querySelector('script[data-workgraph-preferences]')) return;
+  const script = document.createElement("script");
+  script.src = "/workgraph-preferences.js";
+  script.dataset.workgraphPreferences = "true";
+  document.body.appendChild(script);
+}
+
 async function initWorkGraph() {
+  ensureWorkGraphPreferences();
   workGraphState.projectPath = currentProjectPath();
   workGraphState.nodes = await loadWorkGraph();
   if (!workGraphState.nodes.length) workGraphState.nodes = structuredClone(workGraphDefaults);
