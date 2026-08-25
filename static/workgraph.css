@@ -4,7 +4,7 @@
   z-index: 18;
   display: none;
   overflow: auto;
-  padding: 108px 32px 42px 390px;
+  padding: 108px 32px 42px;
   background:
     radial-gradient(circle at 18% 18%, rgba(69, 217, 255, 0.08), transparent 30%),
     radial-gradient(circle at 82% 72%, rgba(166, 99, 255, 0.07), transparent 34%),
@@ -58,7 +58,7 @@ body.workgraph-active .vignette { display: none !important; }
 
 .workgraph-tree {
   position: relative;
-  padding: 8px 0 20px 8px;
+  padding: 8px 0 20px;
 }
 
 .workgraph-node {
@@ -197,7 +197,7 @@ body.workgraph-active .command-actions > #reset-map,
 body.workgraph-active #project-form { opacity: 0.42; pointer-events: none; }
 
 @media (max-width: 1180px) {
-  #workgraph-view { padding-left: 24px; }
+  #workgraph-view { padding: 108px 24px 32px; }
   .workgraph-layout { grid-template-columns: 1fr; }
   .workgraph-inspector { position: static; }
 }
