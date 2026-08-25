@@ -19,7 +19,7 @@ const workGraphDefaults = [
 ];
 
 function wg$(selector) { return document.querySelector(selector); }
-function wgEscape(value = "") { return String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '\"': "&quot;" }[c])); }
+function wgEscape(value = "") { return String(value).replace(/[&<>'\"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '\"': "&quot;" }[c])); }
 
 function currentProjectPath() {
   const inputPath = wg$("#project-path")?.value?.trim();
@@ -241,7 +241,6 @@ function renderInspector() {
       ${["idea","planned","ready","active","waiting","blocked","needs-decision","verification","done","cancelled","superseded"].map((status) => `<option value="${status}" ${node.status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}
     </select></div>
     <div class="data-field"><label>PRIORITY</label><input id="wg-priority" class="workgraph-notes" style="min-height:42px" type="number" min="1" max="9" value="${node.priority ?? 5}"></div>
-    <div class="data-field"><label>PROJECT</label><p style="margin:0;color:rgba(220,235,241,.65);font:12px/1.5 'IBM Plex Mono',monospace;word-break:break-all">${wgEscape(workGraphState.projectPath || "—")}</p></div>
     ${refs}
     <div class="data-field"><label>DOWNSTREAM</label><p style="margin:0;color:rgba(220,235,241,.65);font:12px/1.5 'IBM Plex Mono',monospace">${descendants.length} descendant work item${descendants.length === 1 ? "" : "s"}</p></div>
     <div class="workgraph-actions" style="margin-top:18px;justify-content:flex-start">
