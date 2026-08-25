@@ -12,6 +12,14 @@
 }
 
 #workgraph-view.active { display: block; }
+body.workgraph-active .map-viewport,
+body.workgraph-active .layer-console,
+body.workgraph-active .map-readout,
+body.workgraph-active #inspector,
+body.workgraph-active #loading-screen,
+body.workgraph-active .void-grid,
+body.workgraph-active .scanlines,
+body.workgraph-active .vignette { display: none !important; }
 
 .workgraph-layout {
   display: grid;
@@ -166,7 +174,8 @@
 .workgraph-tabs {
   display: flex;
   gap: 4px;
-  margin-left: 14px;
+  margin: 0 10px 0 14px;
+  flex: 0 0 auto;
 }
 
 .workgraph-tab {
@@ -180,6 +189,12 @@
 }
 
 .workgraph-tab.active { color: #9cff32; border-color: rgba(156,255,50,0.48); background: rgba(156,255,50,0.05); }
+
+body.workgraph-active .command-actions > #quality-report-button,
+body.workgraph-active .command-actions > #export-button,
+body.workgraph-active .command-actions > #options-button,
+body.workgraph-active .command-actions > #reset-map,
+body.workgraph-active #project-form { opacity: 0.42; pointer-events: none; }
 
 @media (max-width: 1180px) {
   #workgraph-view { padding-left: 24px; }
