@@ -1,9 +1,10 @@
-const workGraphStoreKey = "cyber-soul-work-graph";
+const baseWorkGraphStoreKey = "cyber-soul-work-graph";
 
 const workGraphState = {
   nodes: [],
   selected: null,
   expanded: new Set(),
+  projectKey: "default",
 };
 
 const workGraphDefaults = [
@@ -22,16 +23,38 @@ const workGraphDefaults = [
 function wg$(selector) { return document.querySelector(selector); }
 function wgEscape(value = "") { return String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c])); }
 
+function currentProjectKey() {
+  const inputPath = wg$("#project-path")?.value?.trim();
+  const queryPath = new URLSearchParams(window.location.search).get("path")?.trim();
+  const path = inputPath || queryPath || "default";
+  return path.replace(/\\/g, "/").replace(/\/$/, "").toLowerCase();
+}
+
+function workGraphStorageKey(projectKey = currentProjectKey()) {
+  return `${baseWorkGraphStoreKey}:${projectKey}`;
+}
+
 function loadWorkGraph() {
+  workGraphState.projectKey = currentProjectKey();
   try {
-    const parsed = JSON.parse(localStorage.getItem(workGraphStoreKey) || "null");
+    const parsed = JSON.parse(localStorage.getItem(workGraphStorageKey()) || "null");
     if (Array.isArray(parsed) && parsed.length) return parsed;
   } catch (_) {}
   return structuredClone(workGraphDefaults);
 }
 
 function saveWorkGraph() {
-  localStorage.setItem(workGraphStoreKey, JSON.stringify(workGraphState.nodes));
+  localStorage.setItem(workGraphStorageKey(workGraphState.projectKey), JSON.stringify(workGraphState.nodes));
+}
+
+function reloadForProject() {
+  const nextKey = currentProjectKey();
+  if (nextKey === workGraphState.projectKey) return;
+  workGraphState.projectKey = nextKey;
+  workGraphState.nodes = loadWorkGraph();
+  workGraphState.selected = null;
+  workGraphState.expanded = new Set(["root-project"]);
+  renderWorkGraph();
 }
 
 function childrenOf(parentId) {
@@ -174,6 +197,7 @@ function renderInspector() {
       ${["idea","planned","ready","active","waiting","blocked","needs-decision","verification","done","cancelled","superseded"].map((status) => `<option value="${status}" ${node.status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}
     </select></div>
     <div class="data-field"><label>PRIORITY</label><input id="wg-priority" class="workgraph-notes" style="min-height:42px" type="number" min="1" max="9" value="${node.priority ?? 5}"></div>
+    <div class="data-field"><label>PROJECT</label><p style="margin:0;color:rgba(220,235,241,.65);font:12px/1.5 'IBM Plex Mono',monospace;word-break:break-all">${wgEscape(workGraphState.projectKey)}</p></div>
     <div class="data-field"><label>DOWNSTREAM</label><p style="margin:0;color:rgba(220,235,241,.65);font:12px/1.5 'IBM Plex Mono',monospace">${descendants.length} descendant work item${descendants.length === 1 ? "" : "s"}</p></div>
     <div class="workgraph-actions" style="margin-top:18px;justify-content:flex-start">
       <button id="wg-add-child" class="hud-button hot">ADD CHILD</button>
@@ -204,15 +228,23 @@ function setWorkGraphActive(active) {
   document.body.classList.toggle("workgraph-active", active);
   wg$("#workgraph-view")?.classList.toggle("active", active);
   document.querySelectorAll(".workgraph-tab").forEach((button) => button.classList.toggle("active", button.dataset.view === (active ? "workgraph" : "analysis")));
-  if (active) renderWorkGraph();
+  if (active) {
+    reloadForProject();
+    renderWorkGraph();
+  }
 }
 
 function initWorkGraph() {
+  workGraphState.projectKey = currentProjectKey();
   workGraphState.nodes = loadWorkGraph();
   workGraphState.expanded.add("root-project");
 
   wg$("#workgraph-add-root")?.addEventListener("click", () => addChild(null, "goal"));
   document.querySelectorAll(".workgraph-tab").forEach((button) => button.addEventListener("click", () => setWorkGraphActive(button.dataset.view === "workgraph")));
+  wg$("#project-form")?.addEventListener("submit", () => {
+    window.setTimeout(() => reloadForProject(), 300);
+  });
+  wg$("#project-path")?.addEventListener("change", () => reloadForProject());
   renderWorkGraph();
 }
 
