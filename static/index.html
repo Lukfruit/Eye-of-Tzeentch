@@ -14,6 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/workgraph.css">
 </head>
 <body>
   <main id="map-viewport" class="map-viewport" aria-label="Interactive two-dimensional codebase map">
@@ -33,11 +34,36 @@
   <div class="scanlines"></div>
   <div class="vignette"></div>
 
+  <section id="workgraph-view" aria-label="Work Graph">
+    <div class="workgraph-layout">
+      <main class="workgraph-main">
+        <header class="workgraph-header">
+          <div>
+            <div class="panel-kicker"><span>WG</span> STRATEGIC WORK GRAPH</div>
+            <h2>WHAT SHOULD HAPPEN NEXT?</h2>
+            <p>Goals grow into plans. Plans grow into work. Decisions and blocked branches surface without hiding the path already chosen.</p>
+          </div>
+          <div class="workgraph-actions">
+            <button id="workgraph-add-root" class="hud-button hot">ADD GOAL</button>
+          </div>
+        </header>
+        <div id="workgraph-tree" class="workgraph-tree"></div>
+      </main>
+      <aside id="workgraph-inspector" class="workgraph-inspector">
+        <div id="workgraph-inspector-content"></div>
+      </aside>
+    </div>
+  </section>
+
   <header class="command-bar hud-panel">
     <a class="brand" href="#" aria-label="Cyber Soul home">
       <span class="brand-sigil"><i></i><i></i><i></i></span>
       <span class="brand-copy"><strong>CYBER SOUL</strong><small>2D CODE CARTOGRAPHY</small></span>
     </a>
+    <div class="workgraph-tabs" role="tablist" aria-label="Primary views">
+      <button class="workgraph-tab active" data-view="analysis" type="button" role="tab">CODE ANALYSIS</button>
+      <button class="workgraph-tab" data-view="workgraph" type="button" role="tab">WORK GRAPH</button>
+    </div>
     <form id="project-form" class="path-console">
       <span class="console-prefix">ROOT://</span>
       <input id="project-path" aria-label="Project folder" autocomplete="off" spellcheck="false">
@@ -192,6 +218,7 @@
   </dialog>
 
   <div id="toast" class="toast" role="status"></div>
+  <script src="/workgraph.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
