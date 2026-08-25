@@ -162,7 +162,54 @@ The exact scoring model should remain configurable rather than hard-coded into t
 
 A decision is not merely a note in documentation. It is a state in the plan.
 
-Example:
+A decision record should be intentionally lightweight. The system should capture the decision and its rationale without requiring the human to write a full architecture document every time.
+
+### Minimum decision record
+
+```text
+Decision: Use AVSpeechSynthesizer
+Why: Kokoro wasn't reliable enough
+Notes: Native Apple TTS seemed like the simplest fallback
+```
+
+The minimum required information should be:
+
+- **Decision** — what was chosen;
+- **Why** — the short reason;
+- **Notes** — optional free-form context.
+
+### Optional enrichment
+
+The record may optionally grow to include:
+
+- alternatives considered;
+- consequences / trade-offs;
+- affected areas;
+- supporting evidence;
+- links to work items, issues, PRs, commits, or discussions;
+- superseded / supersedes relationships.
+
+These fields should never be mandatory for an ordinary decision.
+
+The goal is to **capture decisions, not force the human to perform an analysis exercise**.
+
+Agents can optionally enrich a decision after it has been recorded. For example, after a human selects AVSpeechSynthesizer, an agent might discover the existing Kokoro and ElevenLabs paths, identify affected code, and propose links or additional context. The human can accept, edit, or ignore that enrichment.
+
+This is compatible with the traditional **Architecture Decision Record (ADR)** pattern, but the system should use a lighter default format. A full ADR-style record is appropriate only when a decision genuinely warrants deeper analysis.
+
+### Decision lifecycle
+
+```text
+quick decision
+     ↓
+optional enrichment
+     ↓
+automatic linking to work/code/evidence
+     ↓
+future warning if the decision may be invalidated
+```
+
+### Example decision state
 
 ```text
 Sense model redesign
@@ -172,17 +219,12 @@ REASON: HUMAN DECISION
 Question:
 Should VocabularyItem reference Sense directly?
 
-Options:
-A. direct reference
-B. value-owned snapshot
-C. normalized join model
-
 Waiting for: human
 ```
 
 When an agent reaches such a node:
 
-1. it records the evidence and options;
+1. it records the evidence and question;
 2. the decision becomes highly visible;
 3. the agent stops spending capacity on work dependent on that decision;
 4. it selects another ready task where possible.
@@ -339,6 +381,8 @@ working observation
     └── new work item
 ```
 
+Decision records are part of the durable layer, but their default creation and maintenance cost should remain low.
+
 ## 12. Human maintenance principle
 
 The system should optimize for **minimal human bookkeeping**.
@@ -359,7 +403,8 @@ The system should automatically maintain:
 - generated architecture;
 - test results;
 - quality findings;
-- stale / superseded execution state.
+- stale / superseded execution state;
+- links between decisions and affected work/code where they can be inferred reliably.
 
 Agents may propose changes to human-owned knowledge, but should not silently rewrite it when the change alters meaning or strategy.
 
@@ -530,7 +575,7 @@ Allow a coding agent to claim a ready node, report progress, create sub-work, an
 
 ### Stage 3 — Decision handling
 
-Add first-class decision nodes and automatic bubbling based on downstream blocked work.
+Add first-class decision nodes and automatic bubbling based on downstream blocked work. Keep the default decision record lightweight and add optional enrichment only when useful.
 
 ### Stage 4 — Eye feedback
 
@@ -560,7 +605,7 @@ The minimum useful experiment is:
 persistent goal tree
 + priorities
 + dependencies
-+ decision nodes
++ lightweight decision records
 + one coding agent
 + agent progress/events
 + Eye-generated observations
