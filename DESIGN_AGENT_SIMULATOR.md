@@ -26,7 +26,7 @@ This is a design direction, not a commitment to a literal game interface.
 
 ## 2. Relationship to the existing Cyber Soul
 
-Cyber Soul already provides a useful **world model** for the codebase. It scans source, builds Experience/Application/Data views, exposes symbols and relationships, retains source evidence for important paths, and surfaces deterministic quality findings. The parser is intentionally lightweight and designed for fast architectural orientation rather than compiler-grade semantic analysis. 
+Cyber Soul already provides a useful **world model** for the codebase. It scans source, builds Experience/Application/Data views, exposes symbols and relationships, retains source evidence for important paths, and surfaces deterministic quality findings. The parser is intentionally lightweight and designed for fast architectural orientation rather than compiler-grade semantic analysis.
 
 The proposed system should build on that foundation rather than replace it.
 
@@ -184,7 +184,7 @@ When an agent reaches such a node:
 
 1. it records the evidence and options;
 2. the decision becomes highly visible;
-3. the agent stops spending capacity on work dependent on that unresolved decision;
+3. the agent stops spending capacity on work dependent on that decision;
 4. it selects another ready task where possible.
 
 The goal is that the system can continue making progress while waiting for the human.
@@ -418,7 +418,74 @@ UNBLOCK / CREATE / REORDER WORK
 SELECT NEXT READY WORK
 ```
 
-## 15. Optimization objective
+## 15. External work and communication systems
+
+The planning graph should integrate with existing systems rather than trying to replace them.
+
+The external system is treated as an **adapter / evidence source / execution sink**, while the Eye planning graph remains the coordination model.
+
+### Work-system integrations
+
+Systems such as:
+
+- GitHub Issues / Pull Requests;
+- Linear;
+- Jira;
+- other issue and project trackers.
+
+These can provide existing work, status, comments, assignees, deadlines, and links. The system can also publish work outward: create or update issues, attach PRs, synchronize status, and link external work back to the internal plan node.
+
+An external task should have a stable relationship to its internal node rather than becoming a second competing copy of the plan.
+
+Example:
+
+```text
+Tzeentch node
+   │
+   ├── Linear issue
+   ├── GitHub PR
+   └── GitHub commit(s)
+```
+
+If external state conflicts with observed reality, show the conflict instead of silently overwriting either side.
+
+### Communication integrations
+
+Systems such as Slack can act primarily as **communication and evidence sources**.
+
+Useful capabilities include:
+
+- ingest relevant threads or messages into an investigation;
+- associate conversations with plan nodes, decisions, issues, or PRs;
+- surface important discussions that may affect current work;
+- post agent progress or decision requests back into a chosen channel;
+- notify humans when a decision blocks meaningful downstream work.
+
+Slack should not automatically become durable product truth. A conversation becomes durable knowledge only through explicit promotion or confirmation.
+
+### Integration design principle
+
+All integrations should use a common adapter model:
+
+```text
+External service
+      ↓
+ adapter
+      ↓
+ normalized event / entity
+      ↓
+ Tzeentch graph
+      ↓
+ agent / human action
+      ↓
+ adapter
+      ↓
+ external service
+```
+
+This keeps Jira, Linear, GitHub, Slack, and future services interchangeable at the planning layer.
+
+## 16. Optimization objective
 
 The system should eventually be capable of answering:
 
@@ -439,7 +506,7 @@ Useful dimensions include:
 - decision leverage;
 - verification cost.
 
-## 16. What this is not
+## 17. What this is not
 
 This is not intended to become:
 
@@ -451,7 +518,7 @@ This is not intended to become:
 
 The distinctive goal is **strategic steering of autonomous software work through a living model of goals, work, decisions, agents, and codebase state**.
 
-## 17. Suggested evolution path
+## 18. Suggested evolution path
 
 ### Stage 1 — Work graph
 
@@ -469,15 +536,19 @@ Add first-class decision nodes and automatic bubbling based on downstream blocke
 
 Feed architecture changes, quality findings, and source evidence into the work graph.
 
-### Stage 5 — Multi-agent orchestration
+### Stage 5 — External integrations
+
+Connect GitHub, Linear, Jira, Slack, and similar systems through adapters. Start read-only where possible, then add controlled write-back once synchronization semantics are clear.
+
+### Stage 6 — Multi-agent orchestration
 
 Allow multiple specialized agents to work on independent ready nodes.
 
-### Stage 6 — Optimization
+### Stage 7 — Optimization
 
 Add recommendation/ranking of next work based on measurable signals and expose why the system made each recommendation.
 
-## 18. Design constraints for the first implementation
+## 19. Design constraints for the first implementation
 
 Keep the first implementation deliberately small.
 
@@ -495,5 +566,7 @@ persistent goal tree
 + Eye-generated observations
 + next-work recommendation
 ```
+
+External integrations should initially be optional adapters and should not be required for the core loop.
 
 If that loop is useful, the rest can grow from observed needs.
