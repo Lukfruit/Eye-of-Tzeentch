@@ -1,0 +1,78 @@
+/* Strategic Work Graph display preferences. */
+body.wg-fade-expanded .workgraph-node.expanded > .workgraph-content {
+  opacity: 0.42;
+  filter: saturate(0.62);
+}
+
+body.wg-fade-expanded .workgraph-node.expanded > .workgraph-content:hover,
+body.wg-fade-expanded .workgraph-node.expanded > .workgraph-content.selected {
+  opacity: 0.78;
+  filter: saturate(0.9);
+}
+
+.workgraph-preference {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 28px 1fr 18px;
+  gap: 11px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(127, 140, 255, 0.2);
+  background: rgba(4, 12, 16, 0.48);
+  color: rgba(220, 235, 241, 0.64);
+  text-align: left;
+}
+
+.workgraph-preference:hover {
+  border-color: rgba(69, 217, 255, 0.38);
+  background: rgba(8, 22, 28, 0.72);
+}
+
+.workgraph-preference.active {
+  border-color: rgba(156, 255, 50, 0.38);
+  background: rgba(156, 255, 50, 0.05);
+  color: #dcebf1;
+}
+
+.workgraph-preference .mode-sigil {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(127, 140, 255, 0.26);
+  color: #7f8cff;
+  font: 13px/1 "IBM Plex Mono", monospace;
+}
+
+.workgraph-preference.active .mode-sigil {
+  color: #9cff32;
+  border-color: rgba(156, 255, 50, 0.4);
+}
+
+.workgraph-preference strong {
+  display: block;
+  font: 600 9px/1.1 "Exo 2", sans-serif;
+  letter-spacing: 0.08em;
+}
+
+.workgraph-preference small {
+  display: block;
+  margin-top: 3px;
+  color: rgba(220, 235, 241, 0.42);
+  font: 7px/1.45 "IBM Plex Mono", monospace;
+}
+
+.workgraph-preference > i {
+  width: 8px;
+  height: 8px;
+  justify-self: end;
+  border: 1px solid #476b70;
+  transform: rotate(45deg);
+}
+
+.workgraph-preference.active > i {
+  border-color: #9cff32;
+  background: #9cff32;
+  box-shadow: 0 0 8px #9cff32;
+}
