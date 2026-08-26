@@ -3,11 +3,11 @@
   let fadeExpanded = localStorage.getItem(STORAGE_KEY) !== "false";
 
   const statusRank = {
-    idea: 1,
-    planned: 2,
-    ready: 3,
-    active: 4,
-    blocked: 5,
+    "idea": 1,
+    "planned": 2,
+    "ready": 3,
+    "active": 4,
+    "blocked": 5,
     "needs-decision": 6,
   };
 
@@ -21,7 +21,7 @@
   }
 
   function graphNodes() {
-    return typeof workGraphState !== "undefined" ? workGraphState.nodes : [];
+    return window.workGraphState?.nodes || [];
   }
 
   function childrenOf(id) {
@@ -49,27 +49,26 @@
   }
 
   function applyStatusRollup() {
-    if (typeof workGraphState === "undefined") return;
-
-    const effectiveById = new Map();
-    graphNodes().filter((node) => node.parentId == null).forEach((root) => {
-      const visit = (node) => {
+    const roots = graphNodes().filter((node) => node.parentId == null);
+    roots.forEach((root) => {
+      const effectiveById = new Map();
+      const walk = (node) => {
         effectiveById.set(node.id, rollupStatus(node.id));
-        childrenOf(node.id).forEach(visit);
+        graphNodes().filter((child) => child.parentId === node.id).forEach(walk);
       };
-      visit(root);
-    });
+      walk(root);
 
-    document.querySelectorAll("#workgraph-tree .workgraph-node").forEach((element) => {
-      const nodeId = element.dataset.nodeId;
-      const effective = effectiveById.get(nodeId);
-      if (!effective) return;
-      const badge = element.querySelector(":scope > .workgraph-content .workgraph-status");
-      if (!badge) return;
-      const label = effective.replaceAll("-", " ").toUpperCase();
-      if (badge.textContent !== label) badge.textContent = label;
-      if (badge.dataset.rolledStatus !== effective) badge.dataset.rolledStatus = effective;
-      if (element.dataset.effectiveStatus !== effective) element.dataset.effectiveStatus = effective;
+      document.querySelectorAll("#workgraph-tree .workgraph-node").forEach((element) => {
+        const nodeId = element.dataset.nodeId;
+        const effective = effectiveById.get(nodeId);
+        if (!effective) return;
+        const badge = element.querySelector(":scope > .workgraph-content .workgraph-status");
+        if (!badge) return;
+        const label = effective.replaceAll("-", " ").toUpperCase();
+        if (badge.textContent !== label) badge.textContent = label;
+        if (badge.dataset.rolledStatus !== effective) badge.dataset.rolledStatus = effective;
+        if (element.dataset.effectiveStatus !== effective) element.dataset.effectiveStatus = effective;
+      });
     });
   }
 
@@ -82,6 +81,18 @@
     applyStatusRollup();
   }
 
+  function simplifyInspector() {
+    const inspector = document.querySelector("#workgraph-inspector-content");
+    if (!inspector) return;
+
+    const heading = inspector.querySelector(":scope > h3");
+    if (heading) heading.remove();
+
+    const titleField = inspector.querySelector("#wg-title");
+    const titleLabel = titleField?.closest(".data-field")?.querySelector("label");
+    if (titleLabel) titleLabel.textContent = "TITLE · EDITABLE · AUTO-SAVES";
+  }
+
   function applyFadePreference() {
     document.body.classList.toggle("wg-fade-expanded", fadeExpanded);
     const button = document.querySelector(".workgraph-preference[data-preference=\"fade-expanded\"]");
@@ -90,6 +101,7 @@
       button.setAttribute("aria-pressed", String(fadeExpanded));
     }
     setExpandedMarkers();
+    simplifyInspector();
   }
 
   function createPreferenceControl() {
@@ -137,6 +149,13 @@
         if (hasStructuralChange) setExpandedMarkers();
       });
       observer.observe(tree, { childList: true, subtree: true });
+    }
+
+    const inspector = document.querySelector("#workgraph-inspector-content");
+    if (inspector) {
+      const inspectorObserver = new MutationObserver(() => simplifyInspector());
+      inspectorObserver.observe(inspector, { childList: true, subtree: true });
+      simplifyInspector();
     }
   }
 
