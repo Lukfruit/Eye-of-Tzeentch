@@ -6,8 +6,6 @@
   <meta name="theme-color" content="#02080b">
   <title>Cyber Soul // Spatial Code Map</title>
   <script>
-    // This interface requires the local scanner/API; a raw file:// page is only
-    // the unpowered shell. Redirect accidental direct opens to the canonical server.
     if (location.protocol === "file:") location.replace("http://127.0.0.1:8877/");
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,203 +19,57 @@
     <svg id="route-layer" class="route-layer" aria-hidden="true"></svg>
     <div class="map-toolbar">
       <label><span>FILTER://</span><input id="map-filter" type="search" placeholder="region, file, symbol…" autocomplete="off"></label>
-      <span id="visible-count">—</span>
-      <span class="pan-hint">DRAG EMPTY SPACE TO PAN</span>
+      <span id="visible-count">—</span><span class="pan-hint">DRAG EMPTY SPACE TO PAN</span>
     </div>
     <div id="route-summary" class="route-summary" hidden></div>
-    <section id="map-stage" class="map-stage">
-      <div id="map-grid" class="map-grid" aria-live="polite"></div>
-      <section id="region-dock" class="region-dock" hidden></section>
-    </section>
+    <section id="map-stage" class="map-stage"><div id="map-grid" class="map-grid" aria-live="polite"></div><section id="region-dock" class="region-dock" hidden></section></section>
   </main>
-  <div class="void-grid"></div>
-  <div class="scanlines"></div>
-  <div class="vignette"></div>
+  <div class="void-grid"></div><div class="scanlines"></div><div class="vignette"></div>
 
   <section id="workgraph-view" aria-label="Work Graph">
     <div class="workgraph-layout">
       <main class="workgraph-main">
         <header class="workgraph-header">
-          <div>
-            <div class="panel-kicker"><span>WG</span> STRATEGIC WORK GRAPH</div>
-            <h2>WHAT SHOULD HAPPEN NEXT?</h2>
-            <p>Goals grow into plans. Plans grow into work. Decisions and blocked branches surface without hiding the path already chosen.</p>
-          </div>
-          <div class="workgraph-actions">
-            <button id="workgraph-add-root" class="hud-button hot">ADD GOAL</button>
-          </div>
+          <div><div class="panel-kicker"><span>WG</span> STRATEGIC WORK GRAPH</div><h2>WHAT SHOULD HAPPEN NEXT?</h2><p>Goals grow into plans. Plans grow into work. Decisions and blocked branches surface without hiding the path already chosen.</p></div>
+          <div class="workgraph-actions"><button id="workgraph-add-root" class="hud-button hot">ADD GOAL</button></div>
         </header>
         <div id="workgraph-tree" class="workgraph-tree"></div>
       </main>
-      <aside id="workgraph-inspector" class="workgraph-inspector">
-        <div id="workgraph-inspector-content"></div>
-      </aside>
+      <aside id="workgraph-inspector" class="workgraph-inspector"><div id="workgraph-inspector-content"></div></aside>
     </div>
   </section>
 
   <header class="command-bar hud-panel">
-    <a class="brand" href="#" aria-label="Cyber Soul home">
-      <span class="brand-sigil"><i></i><i></i><i></i></span>
-      <span class="brand-copy"><strong>CYBER SOUL</strong><small>2D CODE CARTOGRAPHY</small></span>
-    </a>
-    <div class="workgraph-tabs" role="tablist" aria-label="Primary views">
-      <button class="workgraph-tab active" data-view="analysis" type="button" role="tab">CODE ANALYSIS</button>
-      <button class="workgraph-tab" data-view="workgraph" type="button" role="tab">WORK GRAPH</button>
-    </div>
-    <form id="project-form" class="path-console">
-      <span class="console-prefix">ROOT://</span>
-      <input id="project-path" aria-label="Project folder" autocomplete="off" spellcheck="false">
-      <button id="browse-folder" class="browse-folder" type="button" title="Choose project folder" aria-label="Choose project folder">BROWSE</button>
-      <button class="generate-map" type="submit" title="Generate map" aria-label="Generate map">GENERATE</button>
-    </form>
-    <div class="command-actions">
-      <button id="options-button" class="hud-button">OPTIONS</button>
-      <button id="reset-map" class="hud-button">RESET MAP</button>
-      <button id="quality-report-button" class="hud-button quality-report-button">BREACH REPORT</button>
-      <button id="export-button" class="hud-button hot">EXPORT MAP</button>
-    </div>
+    <a class="brand" href="#" aria-label="Cyber Soul home"><span class="brand-sigil"><i></i><i></i><i></i></span><span class="brand-copy"><strong>CYBER SOUL</strong><small>2D CODE CARTOGRAPHY</small></span></a>
+    <div class="workgraph-tabs" role="tablist" aria-label="Primary views"><button class="workgraph-tab active" data-view="analysis" type="button" role="tab">CODE ANALYSIS</button><button class="workgraph-tab" data-view="workgraph" type="button" role="tab">WORK GRAPH</button></div>
+    <form id="project-form" class="path-console"><span class="console-prefix">ROOT://</span><input id="project-path" aria-label="Project folder" autocomplete="off" spellcheck="false"><button id="browse-folder" class="browse-folder" type="button" title="Choose project folder" aria-label="Choose project folder">BROWSE</button><button class="generate-map" type="submit" title="Generate map" aria-label="Generate map">GENERATE</button></form>
+    <div class="command-actions"><button id="options-button" class="hud-button">OPTIONS</button><button id="reset-map" class="hud-button">RESET MAP</button><button id="quality-report-button" class="hud-button quality-report-button">BREACH REPORT</button><button id="export-button" class="hud-button hot">EXPORT MAP</button></div>
   </header>
 
   <aside class="layer-console hud-panel">
-    <div class="panel-kicker"><span>01</span> MAP CONTROL</div>
-    <div class="project-block">
-      <div class="project-icon"><span></span></div>
-      <div><h1 id="project-name">AWAKENING</h1><p id="project-language">READING MACHINE SPIRIT</p></div>
-    </div>
-    <div class="map-vitals">
-      <div><strong id="stat-files">—</strong><small>FILES</small></div>
-      <div><strong id="stat-symbols">—</strong><small>NODES</small></div>
-      <div><strong id="stat-relations">—</strong><small>PATHS</small></div>
-      <div class="quality-vital"><strong id="stat-quality">—</strong><small>BREACHES</small></div>
-    </div>
-
+    <div class="panel-kicker"><span>01</span> MAP CONTROL</div><div class="project-block"><div class="project-icon"><span></span></div><div><h1 id="project-name">AWAKENING</h1><p id="project-language">READING MACHINE SPIRIT</p></div></div>
+    <div class="map-vitals"><div><strong id="stat-files">—</strong><small>FILES</small></div><div><strong id="stat-symbols">—</strong><small>NODES</small></div><div><strong id="stat-relations">—</strong><small>PATHS</small></div><div class="quality-vital"><strong id="stat-quality">—</strong><small>BREACHES</small></div></div>
     <div class="stack-heading"><span>ARCHITECTURE PLANES</span><button id="show-all" class="tiny-button active">OVERVIEW</button></div>
     <nav id="layer-nav" class="layer-nav" aria-label="Architecture planes">
-      <div class="layer-row" data-layer="ux">
-        <button class="visibility-toggle active" aria-label="Toggle experience layer"><i></i></button>
-        <button class="focus-layer"><span class="layer-number">+07</span><span><strong>EXPERIENCE</strong><small>journeys / screens</small></span></button>
-      </div>
-      <div class="layer-row active" data-layer="app">
-        <button class="visibility-toggle active" aria-label="Toggle application layer"><i></i></button>
-        <button class="focus-layer"><span class="layer-number">±00</span><span><strong>APPLICATION</strong><small>types / calls</small></span></button>
-      </div>
-      <div class="layer-row" data-layer="db">
-        <button class="visibility-toggle active" aria-label="Toggle data layer"><i></i></button>
-        <button class="focus-layer"><span class="layer-number">−07</span><span><strong>DATA</strong><small>resources / flows</small></span></button>
-      </div>
+      <div class="layer-row" data-layer="ux"><button class="visibility-toggle active" aria-label="Toggle experience layer"><i></i></button><button class="focus-layer"><span class="layer-number">+07</span><span><strong>EXPERIENCE</strong><small>journeys / screens</small></span></button></div>
+      <div class="layer-row active" data-layer="app"><button class="visibility-toggle active" aria-label="Toggle application layer"><i></i></button><button class="focus-layer"><span class="layer-number">±00</span><span><strong>APPLICATION</strong><small>types / calls</small></span></button></div>
+      <div class="layer-row" data-layer="db"><button class="visibility-toggle active" aria-label="Toggle data layer"><i></i></button><button class="focus-layer"><span class="layer-number">−07</span><span><strong>DATA</strong><small>resources / flows</small></span></button></div>
     </nav>
-
-    <button id="add-category" class="zone-button"><span>＋</span> FORGE NEW REGION</button>
-    <div class="legend">
-      <div><i class="type"></i>TYPE</div><div><i class="function"></i>FUNCTION</div><div><i class="method"></i>METHOD</div>
-    </div>
-    <div class="controls-help">
-      <p><span>CLICK FOLDER</span> decode links</p>
-      <p><span>OPEN</span> enter folder</p>
-      <p><span>DRAG SPACE</span> pan atlas</p>
-      <p><span>EXPAND TYPE</span> reveal members</p>
-      <p><span>CLICK MEMBER / ◎</span> inspect source</p>
-    </div>
+    <button id="add-category" class="zone-button"><span>＋</span> FORGE NEW REGION</button><div class="legend"><div><i class="type"></i>TYPE</div><div><i class="function"></i>FUNCTION</div><div><i class="method"></i>METHOD</div></div>
+    <div class="controls-help"><p><span>CLICK FOLDER</span> decode links</p><p><span>OPEN</span> enter folder</p><p><span>DRAG SPACE</span> pan atlas</p><p><span>EXPAND TYPE</span> reveal members</p><p><span>CLICK MEMBER / ◎</span> inspect source</p></div>
   </aside>
 
-  <section class="map-readout">
-    <div class="scope-nav">
-      <button id="scope-back" hidden>‹ ASCEND</button>
-      <span id="scope-path">CODEBASE / REGIONS</span>
-    </div>
-    <p id="active-coordinate">PLANE ±00</p>
-    <h2 id="active-title">APPLICATION VOLUME</h2>
-    <div class="readout-line"><i></i><span id="map-status">GENERATING CARTOGRAPHY</span></div>
-  </section>
+  <section class="map-readout"><div class="scope-nav"><button id="scope-back" hidden>‹ ASCEND</button><span id="scope-path">CODEBASE / REGIONS</span></div><p id="active-coordinate">PLANE ±00</p><h2 id="active-title">APPLICATION VOLUME</h2><div class="readout-line"><i></i><span id="map-status">GENERATING CARTOGRAPHY</span></div></section>
 
-  <aside id="inspector" class="inspector hud-panel empty">
-    <div class="panel-kicker"><span>02</span> SIGNAL INSPECTOR</div>
-    <div id="inspector-empty" class="inspector-empty">
-      <div class="target-reticle"><i></i></div>
-      <h3>NO SIGNAL ACQUIRED</h3>
-      <p>Select a symbol card to inspect its source signature and pathways.</p>
-    </div>
-    <div id="inspector-content" class="inspector-content" hidden>
-      <div class="signal-header"><span id="detail-kind">TYPE</span><button id="close-inspector">×</button></div>
-      <h3 id="detail-name"></h3>
-      <p id="detail-parent"></p>
-      <div class="data-field"><label>SOURCE COORDINATE</label><code id="detail-file"></code></div>
-      <div class="data-field"><label>SIGNATURE</label><pre id="detail-signature"></pre></div>
-      <div class="data-field"><label>QUALITY RULES</label><div id="detail-quality" class="quality-list"></div></div>
-      <div class="data-field"><label>REGION</label><select id="detail-category"></select></div>
-      <div class="data-field"><label>PATHWAYS</label><div id="detail-relations" class="relation-list"></div></div>
-    </div>
-  </aside>
+  <aside id="inspector" class="inspector hud-panel empty"><div class="panel-kicker"><span>02</span> SIGNAL INSPECTOR</div><div id="inspector-empty" class="inspector-empty"><div class="target-reticle"><i></i></div><h3>NO SIGNAL ACQUIRED</h3><p>Select a symbol card to inspect its source signature and pathways.</p></div><div id="inspector-content" class="inspector-content" hidden><div class="signal-header"><span id="detail-kind">TYPE</span><button id="close-inspector">×</button></div><h3 id="detail-name"></h3><p id="detail-parent"></p><div class="data-field"><label>SOURCE COORDINATE</label><code id="detail-file"></code></div><div class="data-field"><label>SIGNATURE</label><pre id="detail-signature"></pre></div><div class="data-field"><label>QUALITY RULES</label><div id="detail-quality" class="quality-list"></div></div><div class="data-field"><label>REGION</label><select id="detail-category"></select></div><div class="data-field"><label>PATHWAYS</label><div id="detail-relations" class="relation-list"></div></div></div></aside>
 
-  <div id="node-tooltip" class="node-tooltip" hidden><strong></strong><small></small></div>
-  <div id="loading-screen" class="loading-screen">
-    <div class="loading-core"><i></i><i></i><span></span></div>
-    <p>GENERATING CODE MAP</p>
-    <small id="loading-detail">ANALYZING SOURCE TOPOLOGY</small>
-  </div>
-  <dialog id="category-dialog" class="hud-dialog">
-    <form id="category-form">
-      <div class="panel-kicker"><span>03</span> REGION FORGE</div>
-      <h2>CREATE MAP REGION</h2>
-      <p>The new region will materialize on the active architecture plane.</p>
-      <input id="category-name" maxlength="28" placeholder="REGION DESIGNATION" required autocomplete="off">
-      <div id="color-row" class="color-row">
-        <button type="button" data-color="cyan" class="cyan selected"></button>
-        <button type="button" data-color="violet" class="violet"></button>
-        <button type="button" data-color="lime" class="lime"></button>
-        <button type="button" data-color="blue" class="blue"></button>
-        <button type="button" data-color="indigo" class="indigo"></button>
-        <button type="button" data-color="aqua" class="aqua"></button>
-      </div>
-      <div class="dialog-actions"><button type="button" id="cancel-category" class="hud-button">ABORT</button><button class="hud-button hot">MATERIALIZE</button></div>
-    </form>
-  </dialog>
-
-  <dialog id="export-dialog" class="hud-dialog export-dialog">
-    <div class="dialog-header"><div><div class="panel-kicker"><span>04</span> MAP DATA-SCROLL</div><h2 id="export-title">APPLICATION MAP</h2></div><button id="close-export">×</button></div>
-    <textarea id="mermaid-source" spellcheck="false" readonly></textarea>
-    <div class="dialog-actions"><span id="copy-status"></span><button id="copy-mermaid" class="hud-button hot">COPY MERMAID</button></div>
-  </dialog>
-
-  <dialog id="quality-report-dialog" class="hud-dialog export-dialog quality-report-dialog">
-    <div class="dialog-header"><div><div class="panel-kicker"><span>05</span> QUALITY DATA-SCROLL</div><h2>AI-READY BREACH REPORT</h2></div><button id="close-quality-report" aria-label="Close breach report">×</button></div>
-    <p class="report-intro">Complete Markdown report with source evidence, repair guidance, and verification steps. Credential values remain redacted.</p>
-    <textarea id="quality-report-source" spellcheck="false" readonly aria-label="Code quality breach report"></textarea>
-    <div class="dialog-actions"><span id="quality-report-status"></span><button id="download-quality-report" class="hud-button">DOWNLOAD .MD</button><button id="copy-quality-report" class="hud-button hot">COPY FOR AI</button></div>
-  </dialog>
-
-  <dialog id="options-dialog" class="hud-dialog options-dialog">
-    <div class="dialog-header"><div><div class="panel-kicker"><span>06</span> DISPLAY RITES</div><h2>PATHWAY DENSITY</h2></div><button id="close-options">×</button></div>
-    <p class="options-intro">Choose how dependency routes appear. Focused mode keeps the map quiet until you hover or select a location.</p>
-    <div class="mode-options" role="radiogroup" aria-label="Pathway visibility">
-      <button class="mode-option active" data-route-mode="focus" role="radio" aria-checked="true">
-        <span class="mode-sigil">◎</span><span><strong>FOCUSED</strong><small>Show only pathways touching the hovered or selected card.</small></span><i></i>
-      </button>
-      <button class="mode-option" data-route-mode="primary" role="radio" aria-checked="false">
-        <span class="mode-sigil">⌁</span><span><strong>PRIMARY</strong><small>Keep the strongest routes visible at the current depth.</small></span><i></i>
-      </button>
-      <button class="mode-option" data-route-mode="off" role="radio" aria-checked="false">
-        <span class="mode-sigil">×</span><span><strong>HIDDEN</strong><small>Hide all route lines; relationship counts remain on cards.</small></span><i></i>
-      </button>
-    </div>
-    <section class="optional-rules-panel">
-      <div class="optional-rules-heading"><span>OPTIONAL QUALITY RULES</span><small>OFF BY DEFAULT</small></div>
-      <button class="optional-rule" type="button" data-optional-rule="no-silent-failure" aria-pressed="false">
-        <span class="mode-sigil">!</span><span><strong>NO SILENT FAILURE</strong><small>Error handlers must throw or call a recognized logger. Deliberate fallbacks without either are flagged.</small></span><i></i>
-      </button>
-      <button class="optional-rule" type="button" data-optional-rule="deep-indentation" aria-pressed="false">
-        <span class="mode-sigil">↳</span><span><strong>NO DEEP INDENTATION</strong><small>Report callables whose lexical nesting reaches three or more indentation levels.</small></span><i></i>
-      </button>
-      <button id="apply-optional-rules" class="hud-button hot" type="button">APPLY &amp; RESCAN</button>
-    </section>
-    <div class="control-doctrine">
-      <span>REGION</span><strong>FEATURE AREA</strong>
-      <span>FILE</span><strong>SOURCE UNIT</strong>
-      <span>SYMBOL</span><strong>LOCAL DETAIL</strong>
-    </div>
-  </dialog>
-
+  <div id="node-tooltip" class="node-tooltip" hidden><strong></strong><small></small></div><div id="loading-screen" class="loading-screen"><div class="loading-core"><i></i><i></i><span></span></div><p>GENERATING CODE MAP</p><small id="loading-detail">ANALYZING SOURCE TOPOLOGY</small></div>
+  <dialog id="category-dialog" class="hud-dialog"><form id="category-form"><div class="panel-kicker"><span>03</span> REGION FORGE</div><h2>CREATE MAP REGION</h2><p>The new region will materialize on the active architecture plane.</p><input id="category-name" maxlength="28" placeholder="REGION DESIGNATION" required autocomplete="off"><div id="color-row" class="color-row"><button type="button" data-color="cyan" class="cyan selected"></button><button type="button" data-color="violet" class="violet"></button><button type="button" data-color="lime" class="lime"></button><button type="button" data-color="blue" class="blue"></button><button type="button" data-color="indigo" class="indigo"></button><button type="button" data-color="aqua" class="aqua"></button></div><div class="dialog-actions"><button type="button" id="cancel-category" class="hud-button">ABORT</button><button class="hud-button hot">MATERIALIZE</button></div></form></dialog>
+  <dialog id="export-dialog" class="hud-dialog export-dialog"><div class="dialog-header"><div><div class="panel-kicker"><span>04</span> MAP DATA-SCROLL</div><h2 id="export-title">APPLICATION MAP</h2></div><button id="close-export">×</button></div><textarea id="mermaid-source" spellcheck="false" readonly></textarea><div class="dialog-actions"><span id="copy-status"></span><button id="copy-mermaid" class="hud-button hot">COPY MERMAID</button></div></dialog>
+  <dialog id="quality-report-dialog" class="hud-dialog export-dialog quality-report-dialog"><div class="dialog-header"><div><div class="panel-kicker"><span>05</span> QUALITY DATA-SCROLL</div><h2>AI-READY BREACH REPORT</h2></div><button id="close-quality-report" aria-label="Close breach report">×</button></div><p class="report-intro">Complete Markdown report with source evidence, repair guidance, and verification steps. Credential values remain redacted.</p><textarea id="quality-report-source" spellcheck="false" readonly aria-label="Code quality breach report"></textarea><div class="dialog-actions"><span id="quality-report-status"></span><button id="download-quality-report" class="hud-button">DOWNLOAD .MD</button><button id="copy-quality-report" class="hud-button hot">COPY FOR AI</button></div></dialog>
+  <dialog id="options-dialog" class="hud-dialog options-dialog"><div class="dialog-header"><div><div class="panel-kicker"><span>06</span> DISPLAY RITES</div><h2>PATHWAY DENSITY</h2></div><button id="close-options">×</button></div><p class="options-intro">Choose how dependency routes appear. Focused mode keeps the map quiet until you hover or select a location.</p><div class="mode-options" role="radiogroup" aria-label="Pathway visibility"><button class="mode-option active" data-route-mode="focus" role="radio" aria-checked="true"><span class="mode-sigil">◎</span><span><strong>FOCUSED</strong><small>Show only pathways touching the hovered or selected card.</small></span><i></i></button><button class="mode-option" data-route-mode="primary" role="radio" aria-checked="false"><span class="mode-sigil">⌁</span><span><strong>PRIMARY</strong><small>Keep the strongest routes visible at the current depth.</small></span><i></i></button><button class="mode-option" data-route-mode="off" role="radio" aria-checked="false"><span class="mode-sigil">×</span><span><strong>HIDDEN</strong><small>Hide all route lines; relationship counts remain on cards.</small></span><i></i></button></div><section class="optional-rules-panel"><div class="optional-rules-heading"><span>OPTIONAL QUALITY RULES</span><small>OFF BY DEFAULT</small></div><button class="optional-rule" type="button" data-optional-rule="no-silent-failure" aria-pressed="false"><span class="mode-sigil">!</span><span><strong>NO SILENT FAILURE</strong><small>Error handlers must throw or call a recognized logger. Deliberate fallbacks without either are flagged.</small></span><i></i></button><button class="optional-rule" type="button" data-optional-rule="deep-indentation" aria-pressed="false"><span class="mode-sigil">↳</span><span><strong>NO DEEP INDENTATION</strong><small>Report callables whose lexical nesting reaches three or more indentation levels.</small></span><i></i></button><button id="apply-optional-rules" class="hud-button hot" type="button">APPLY &amp; RESCAN</button></section><div class="control-doctrine"><span>REGION</span><strong>FEATURE AREA</strong><span>FILE</span><strong>SOURCE UNIT</strong><span>SYMBOL</span><strong>LOCAL DETAIL</strong></div></dialog>
   <div id="toast" class="toast" role="status"></div>
+  <script src="/workgraph-model.js"></script>
   <script src="/workgraph.js"></script>
   <script src="/app.js"></script>
 </body>
