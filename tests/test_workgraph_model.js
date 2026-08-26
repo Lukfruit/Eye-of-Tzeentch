@@ -52,7 +52,7 @@ const cyclic = [
   node("b", "a", "planned"),
 ];
 assert.equal(Model.effectiveStatus(cyclic, "a"), "blocked");
-assert.ok(Model.validate(cyclic).length === 0, "Parent references are present even though the graph is cyclic");
+assert.ok(Model.validate(cyclic).some((error) => error.includes("Cycle detected")));
 
 const invalid = [
   node("dup", null, "planned"),
