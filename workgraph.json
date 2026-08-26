@@ -187,7 +187,7 @@
       "title": "title is duplicated",
       "why": "",
       "notes": "",
-      "status": "planned",
+      "status": "done",
       "priority": 1,
       "kind": "task"
     },
@@ -197,7 +197,7 @@
       "title": "statuses should have different visual intensity depending on the importance",
       "why": "",
       "notes": "",
-      "status": "planned",
+      "status": "ready",
       "priority": 1,
       "kind": "task"
     },
