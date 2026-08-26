@@ -24,16 +24,21 @@ const workGraphDefaults = [{
 const WORKGRAPH_PREF_KEY = "cyber-soul-workgraph-fade-expanded";
 let saveTimer = null;
 let fadeExpanded = localStorage.getItem(WORKGRAPH_PREF_KEY) !== "false";
+let projectReloadInFlight = null;
+let lastObservedProjectPath = "";
 
 function wg$(selector) { return document.querySelector(selector); }
 function wgEscape(value = "") {
   return String(value).replace(/[&<>'\"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '\"': "&quot;" }[c]));
 }
 
+// ROOT:// is shared with the code-analysis view. Prefer the URL when it has an
+// explicit project path, otherwise use the visible input value. This keeps a
+// URL-driven launch and an interactive folder change aligned.
 function currentProjectPath() {
-  const inputPath = wg$("#project-path")?.value?.trim();
   const queryPath = new URLSearchParams(window.location.search).get("path")?.trim();
-  return inputPath || queryPath || "";
+  const inputPath = wg$("#project-path")?.value?.trim();
+  return queryPath || inputPath || "";
 }
 
 async function loadWorkGraph() {
@@ -75,14 +80,34 @@ async function saveWorkGraph() {
   }
 }
 
-async function reloadForProject() {
-  const nextPath = currentProjectPath();
+async function reloadForProject(pathOverride = "") {
+  const nextPath = String(pathOverride || currentProjectPath()).trim();
   if (nextPath === workGraphState.projectPath && workGraphState.nodes.length) return;
-  workGraphState.projectPath = nextPath;
-  workGraphState.nodes = await loadWorkGraph();
-  workGraphState.selected = null;
-  workGraphState.expanded = new Set([workGraphState.nodes[0]?.id || "root-project"]);
-  renderWorkGraph();
+  if (projectReloadInFlight === nextPath) return projectReloadInFlight;
+
+  projectReloadInFlight = (async () => {
+    workGraphState.projectPath = nextPath;
+    workGraphState.nodes = await loadWorkGraph();
+    workGraphState.selected = null;
+    workGraphState.expanded = new Set([workGraphState.nodes[0]?.id || "root-project"]);
+    lastObservedProjectPath = nextPath;
+    renderWorkGraph();
+  })().finally(() => {
+    projectReloadInFlight = null;
+  });
+
+  return projectReloadInFlight;
+}
+
+// The code-analysis view owns the ROOT:// form, so Work Graph cannot rely on a
+// particular submit/change event ordering. We explicitly synchronize the path.
+// Polling only compares two strings; the graph is reloaded only when the path
+// actually changes. This is intentionally simpler and safer than observing the
+// DOM or trying to hook into the scanner's internal lifecycle.
+function syncProjectPath() {
+  const nextPath = currentProjectPath();
+  if (!nextPath || nextPath === lastObservedProjectPath) return;
+  void reloadForProject(nextPath);
 }
 
 function selectedNode() {
@@ -334,32 +359,39 @@ function setWorkGraphActive(active) {
   document.body.classList.toggle("workgraph-active", active);
   wg$("#workgraph-view")?.classList.toggle("active", active);
   document.querySelectorAll(".workgraph-tab").forEach((button) => button.classList.toggle("active", button.dataset.view === (active ? "workgraph" : "analysis")));
-  if (active) renderWorkGraph();
+  if (active) {
+    syncProjectPath();
+    renderWorkGraph();
+  }
 }
 
-function ensureWorkGraphPreferences() {
-  if (document.querySelector('script[data-workgraph-preferences]')) return;
-  const script = document.createElement("script");
-  script.src = "/workgraph-preferences.js";
-  script.dataset.workgraphPreferences = "true";
-  document.body.appendChild(script);
+function ensureWorkGraphStyles() {
+  if (document.querySelector('link[data-workgraph-preferences]')) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "/workgraph-preferences.css";
+  link.dataset.workgraphPreferences = "true";
+  document.head.appendChild(link);
 }
 
-async function initWorkGraph() {
-  ensureWorkGraphPreferences();
+function initWorkGraph() {
   ensureWorkGraphStyles();
   ensureFadePreferenceControl();
   applyFadePreference();
-  workGraphState.projectPath = currentProjectPath();
-  workGraphState.nodes = await loadWorkGraph();
-  if (!workGraphState.nodes.length) workGraphState.nodes = structuredClone(workGraphDefaults);
-  workGraphState.expanded.add(workGraphState.nodes[0]?.id || "root-project");
+  workGraphState.projectPath = "";
+  lastObservedProjectPath = "";
 
   wg$("#workgraph-add-root")?.addEventListener("click", () => addChild(null, "goal"));
   document.querySelectorAll(".workgraph-tab").forEach((button) => button.addEventListener("click", () => setWorkGraphActive(button.dataset.view === "workgraph")));
-  wg$("#project-form")?.addEventListener("submit", () => window.setTimeout(() => { void reloadForProject(); }, 100));
-  wg$("#project-path")?.addEventListener("change", () => { void reloadForProject(); });
-  renderWorkGraph();
+  wg$("#project-path")?.addEventListener("input", syncProjectPath);
+  wg$("#project-path")?.addEventListener("change", syncProjectPath);
+
+  // A small path synchronizer bridges changes made by the scanner's folder
+  // picker/form without creating a DOM mutation observer.
+  window.setInterval(syncProjectPath, 400);
+  void reloadForProject(currentProjectPath());
 }
 
 document.addEventListener("DOMContentLoaded", initWorkGraph);
+
+window.reloadWorkGraphForProject = reloadForProject;
