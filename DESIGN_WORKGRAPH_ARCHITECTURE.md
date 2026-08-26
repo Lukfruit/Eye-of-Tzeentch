@@ -62,26 +62,27 @@ Use explicit event handlers or explicit render calls instead. A DOM observer wou
 
 Node edits should pass through `updateNode()` or another single mutation boundary so persistence, validation, and rendering behavior remain predictable.
 
-### 6. Derived status is not stored twice
+### 6. Statuses are split into user state and system-derived state
 
-A node stores its source/manual status. Parent effective status is calculated from its subtree. This avoids stale duplicated state.
-
-Current precedence:
+The basic user-selectable status vocabulary is deliberately small:
 
 ```text
-NEEDS DECISION
-BLOCKED
-ACTIVE / VERIFICATION
-READY / WAITING
-PLANNED
-IDEA
+IDEA → PLANNED → ACTIVE → DONE / CANCELLED
 ```
 
-`DONE` is derived when all children are done. Terminal historical states such as `CANCELLED` and `SUPERSEDED` should not create active work pressure in ancestors.
+`NEEDS DECISION` is a system-derived state that bubbles upward from unresolved decision work. Its precedence is:
+
+```text
+NEEDS DECISION > ACTIVE > PLANNED > IDEA
+```
+
+`DONE` and `CANCELLED` are terminal local/history states. They do not propagate upward and should not change the active state of ancestors.
+
+`BLOCKED` is reserved for future automatic dependency analysis. It is not currently user-selectable and is not part of the current roll-up algorithm.
 
 ### 7. Traversal must fail closed
 
-Every recursive hierarchy helper should have cycle protection. A malformed graph must produce a warning/error state rather than an infinite recursion or browser lock-up.
+Every recursive hierarchy helper should have cycle protection. A malformed graph must produce a warning/error state rather than an infinite recursion or browser lock-up. A graph cycle is malformed data, not a user-facing `BLOCKED` status.
 
 ### 8. Persistence is debounced
 
@@ -91,12 +92,13 @@ Rapid field edits should not issue one disk write per keystroke. Schedule a shor
 
 `tests/test_workgraph_model.js` covers:
 
-- status propagation
+- NEEDS DECISION propagation
 - active-over-planned behavior
-- completion roll-up
+- DONE/CANCELLED non-propagation
 - hierarchical graph IDs
 - cycle detection
 - duplicate IDs and missing parents
+- the allowed status precedence vocabulary
 
 Run with:
 
