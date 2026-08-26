@@ -115,7 +115,8 @@ function addChild(parentId, kind = "task") {
     title: title.trim(),
     why: "",
     notes: "",
-    status: kind === "decision" ? "needs-decision" : "planned",
+    // Decision nodes begin in the system-derived NEEDS DECISION state.
+    status: kind === "decision" ? "needs-decision" : "idea",
     priority: parent?.priority ?? 3,
     kind,
   };
@@ -148,19 +149,19 @@ function effectiveStatus(node) {
 }
 
 function statusLabel(status) {
-  return String(status || "planned").replaceAll("-", " ").toUpperCase();
+  return String(status || "idea").replaceAll("-", " ").toUpperCase();
 }
 
 function nodeColor(node) {
   switch (effectiveStatus(node)) {
-    case "needs-decision":
-    case "blocked": return "#ff5e89";
-    case "active":
-    case "verification": return "#9cff32";
+    case "needs-decision": return "#ff5e89";
+    case "active": return "#9cff32";
     case "done": return "#42f5d4";
-    case "waiting": return "#ff9e43";
-    case "ready": return "#45d9ff";
+    case "cancelled": return "#68747d";
+    case "planned": return "#7f8cff";
     case "idea": return "#a663ff";
+    // Reserved for a future automatically-derived dependency state.
+    case "blocked": return "#ff5e89";
     default: return "#7f8cff";
   }
 }
@@ -254,15 +255,23 @@ function renderInspector() {
   wg$("#wg-why").value = node.why || "";
   wg$("#wg-notes").value = node.notes || "";
 
-  const statuses = ["idea", "planned", "ready", "waiting", "active", "verification", "blocked", "needs-decision", "done", "cancelled", "superseded"];
+  // Only these are user-selectable. NEEDS DECISION is derived/system state.
+  const userStatuses = ["idea", "planned", "active", "done", "cancelled"];
   const statusSelect = wg$("#wg-status");
-  statusSelect.replaceChildren(...statuses.map((status) => {
+  statusSelect.replaceChildren(...userStatuses.map((status) => {
     const option = document.createElement("option");
     option.value = status;
     option.textContent = statusLabel(status);
     option.selected = node.status === status;
     return option;
   }));
+  if (node.status === "needs-decision") {
+    const option = document.createElement("option");
+    option.value = "needs-decision";
+    option.textContent = "NEEDS DECISION";
+    option.selected = true;
+    statusSelect.insertBefore(option, statusSelect.firstChild);
+  }
 
   wg$("#wg-why").addEventListener("input", (event) => updateNode(node.id, { why: event.target.value }));
   wg$("#wg-notes").addEventListener("input", (event) => updateNode(node.id, { notes: event.target.value }));
