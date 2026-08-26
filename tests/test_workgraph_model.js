@@ -12,15 +12,15 @@ function node(id, parentId, status, priority = 1) {
   return { id, parentId, title: id, status, priority, kind: "task" };
 }
 
-const tree = [
+const decisionTree = [
   node("p1", null, "planned"),
   node("p1-1", "p1", "planned"),
   node("p1-1-1", "p1-1", "needs-decision"),
 ];
 
-assert.equal(Model.effectiveStatus(tree, "p1-1-1"), "needs-decision");
-assert.equal(Model.effectiveStatus(tree, "p1-1"), "needs-decision");
-assert.equal(Model.effectiveStatus(tree, "p1"), "needs-decision");
+assert.equal(Model.effectiveStatus(decisionTree, "p1-1-1"), "needs-decision");
+assert.equal(Model.effectiveStatus(decisionTree, "p1-1"), "needs-decision");
+assert.equal(Model.effectiveStatus(decisionTree, "p1"), "needs-decision");
 
 const activeTree = [
   node("p2", null, "planned"),
@@ -29,12 +29,20 @@ const activeTree = [
 ];
 assert.equal(Model.effectiveStatus(activeTree, "p2"), "active");
 
-const doneTree = [
+const terminalTree = [
   node("p3", null, "active"),
   node("p3-1", "p3", "done"),
-  node("p3-2", "p3", "done"),
+  node("p3-2", "p3", "cancelled"),
 ];
-assert.equal(Model.effectiveStatus(doneTree, "p3"), "done");
+assert.equal(Model.effectiveStatus(terminalTree, "p3"), "active", "DONE/CANCELLED descendants do not propagate upward");
+assert.equal(Model.effectiveStatus(terminalTree, "p3-1"), "done");
+assert.equal(Model.effectiveStatus(terminalTree, "p3-2"), "cancelled");
+
+const terminalParent = [
+  node("p4", null, "done"),
+  node("p4-1", "p4", "needs-decision"),
+];
+assert.equal(Model.effectiveStatus(terminalParent, "p4"), "done", "Terminal parent state remains local");
 
 const ids = [
   node("root", null, "planned"),
@@ -51,7 +59,7 @@ const cyclic = [
   node("a", "b", "planned"),
   node("b", "a", "planned"),
 ];
-assert.equal(Model.effectiveStatus(cyclic, "a"), "blocked");
+assert.equal(Model.effectiveStatus(cyclic, "a"), "planned", "Cycle is malformed data, not BLOCKED");
 assert.ok(Model.validate(cyclic).some((error) => error.includes("Cycle detected")));
 
 const invalid = [
@@ -62,5 +70,7 @@ const invalid = [
 const errors = Model.validate(invalid);
 assert.ok(errors.some((error) => error.includes("Duplicate node id")));
 assert.ok(errors.some((error) => error.includes("Missing parent")));
+
+assert.deepEqual(Object.keys(Model.STATUS_RANK), ["idea", "planned", "active", "needs-decision"]);
 
 console.log("Work Graph model tests passed.");
