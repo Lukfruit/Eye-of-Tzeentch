@@ -5,6 +5,11 @@ const workGraphState = {
   projectPath: "",
 };
 
+// Exposed read-only by convention for Work Graph preference helpers.
+// Mutations should go through the functions in this module and persist to
+// workgraph.json; preference code must not create a second source of truth.
+window.workGraphState = workGraphState;
+
 const workGraphDefaults = [
   {
     id: "root-project",
@@ -233,9 +238,8 @@ function renderInspector() {
     : "";
   host.innerHTML = `
     <div class="panel-kicker"><span>02</span> WORK INSPECTOR</div>
-    <h3>${wgEscape(node.title)}</h3>
     <div class="data-field"><label>GRAPH ID</label><p style="margin:0;color:#9cff32;font:12px 'IBM Plex Mono',monospace">${graphIdForNode(node.id)}</p></div>
-    <div class="data-field"><label>TITLE</label><input id="wg-title" class="workgraph-notes" style="min-height:42px" type="text" value="${wgEscape(node.title)}" placeholder="Work item title"></div>
+    <div class="data-field"><label>TITLE · EDITABLE · AUTO-SAVES</label><input id="wg-title" class="workgraph-notes" style="min-height:42px" type="text" value="${wgEscape(node.title)}" placeholder="Work item title"></div>
     <div class="data-field"><label>WHY</label><textarea id="wg-why" class="workgraph-notes" placeholder="Why does this work exist?"></textarea></div>
     <div class="data-field"><label>NOTES</label><textarea id="wg-notes" class="workgraph-notes" placeholder="Optional context, evidence, decisions…"></textarea></div>
     <div class="data-field"><label>STATUS</label><select id="wg-status" class="workgraph-notes" style="min-height:42px">
@@ -268,6 +272,10 @@ function renderInspector() {
   wg$("#wg-delete")?.addEventListener("click", () => deleteNode(node.id));
 }
 
+// IMPORTANT: renderWorkGraph replaces the graph subtree wholesale. Do not attach
+// a MutationObserver to #workgraph-tree whose callback calls this function or
+// otherwise mutates the same subtree; that creates an observer -> mutation ->
+// observer loop. Observe external/data changes instead and re-render explicitly.
 function renderWorkGraph() {
   const tree = wg$("#workgraph-tree");
   if (!tree) return;
