@@ -123,6 +123,12 @@
 
     const tree = document.querySelector("#workgraph-tree");
     if (tree) {
+      // IMPORTANT: this observer may react only to structural graph changes.
+      // Never mutate the observed subtree from the observer callback in a way
+      // that creates more structural mutations, or the observer can recurse
+      // indefinitely. In particular, do not observe the inspector or call a
+      // renderer that replaces the tree from here. Status/style updates belong
+      // in data state or CSS and must not trigger another observer pass.
       const observer = new MutationObserver((mutations) => {
         const hasStructuralChange = mutations.some((mutation) =>
           [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
