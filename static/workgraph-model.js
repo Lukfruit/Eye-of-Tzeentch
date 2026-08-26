@@ -7,15 +7,14 @@
  * Contract: functions in this module are pure with respect to `nodes`.
  */
 (() => {
+  // User-settable statuses. NEEDS DECISION is derived from the subtree.
+  // BLOCKED is reserved for future dependency detection and is not currently
+  // exposed as a user-selectable status or used by roll-up logic.
   const STATUS_RANK = Object.freeze({
     idea: 1,
     planned: 2,
-    ready: 3,
-    waiting: 3,
-    verification: 4,
-    active: 4,
-    blocked: 5,
-    "needs-decision": 6,
+    active: 3,
+    "needs-decision": 4,
   });
 
   function childrenOf(nodes, parentId) {
@@ -52,24 +51,27 @@
   }
 
   function effectiveStatus(nodes, nodeId, visiting = new Set()) {
-    if (visiting.has(nodeId)) return "blocked";
+    // A cycle is malformed graph data, not a user-facing work status.
+    if (visiting.has(nodeId)) return "planned";
 
     const node = nodes.find((item) => item.id === nodeId);
     if (!node) return "planned";
 
-    const children = childrenOf(nodes, nodeId);
-    if (!children.length) return node.status || "planned";
+    // DONE and CANCELLED are terminal local states. They never propagate up.
+    if (node.status === "done" || node.status === "cancelled") return node.status;
 
     const nextVisiting = new Set(visiting);
     nextVisiting.add(nodeId);
-    const childStatuses = children.map((child) => effectiveStatus(nodes, child.id, nextVisiting));
+    const childStatuses = childrenOf(nodes, nodeId)
+      .map((child) => effectiveStatus(nodes, child.id, nextVisiting));
 
-    if (childStatuses.every((status) => status === "done")) return "done";
+    // Terminal descendants do not affect the parent's active planning state.
+    const candidates = [node.status, ...childStatuses]
+      .filter((status) => STATUS_RANK[status]);
 
-    const candidates = [node.status, ...childStatuses].filter((status) => STATUS_RANK[status]);
     return candidates.reduce(
       (highest, status) => (STATUS_RANK[status] > (STATUS_RANK[highest] || 0) ? status : highest),
-      "planned",
+      "idea",
     );
   }
 
