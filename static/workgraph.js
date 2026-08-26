@@ -245,8 +245,7 @@ function renderInspector() {
     <div class="data-field"><label>GRAPH ID</label><p class="workgraph-readout">${WorkGraphModel.graphIdForNode(workGraphState.nodes, node.id)}</p></div>
     <div class="data-field"><label>WHY</label><textarea id="wg-why" class="workgraph-notes" placeholder="Why does this work exist?"></textarea></div>
     <div class="data-field"><label>NOTES</label><textarea id="wg-notes" class="workgraph-notes" placeholder="Optional context, evidence, decisions…"></textarea></div>
-    <div class="data-field"><label>STATUS · SOURCE</label><select id="wg-status" class="workgraph-notes" style="min-height:42px"></select></div>
-    <div class="data-field"><label>EFFECTIVE STATUS</label><p class="workgraph-readout">${statusLabel(effectiveStatus(node))}</p></div>
+    <div class="data-field"><label>STATUS</label><select id="wg-status" class="workgraph-notes" style="min-height:42px"></select></div>
     <div class="data-field"><label>PRIORITY</label><input id="wg-priority" class="workgraph-notes" style="min-height:42px" type="number" min="1" max="9" value="${node.priority ?? 5}"></div>
     ${refs}
     <div class="data-field"><label>DOWNSTREAM</label><p class="workgraph-muted">${descendants.length} descendant work item${descendants.length === 1 ? "" : "s"}</p></div>
