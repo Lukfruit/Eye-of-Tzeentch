@@ -89,13 +89,21 @@
       }
     }
 
-    // A defensive traversal check: a malformed graph must fail closed rather
-    // than allowing recursive UI code to spin forever.
-    for (const root of nodes.filter((node) => node.parentId == null)) {
-      effectiveStatus(nodes, root.id);
-    }
+    const visit = (id, visiting, visited) => {
+      if (visiting.has(id)) {
+        errors.push(`Cycle detected at node ${id}`);
+        return;
+      }
+      if (visited.has(id)) return;
+      visiting.add(id);
+      childrenOf(nodes, id).forEach((child) => visit(child.id, visiting, visited));
+      visiting.delete(id);
+      visited.add(id);
+    };
 
-    return errors;
+    const visited = new Set();
+    nodes.forEach((node) => visit(node.id, new Set(), visited));
+    return [...new Set(errors)];
   }
 
   window.WorkGraphModel = Object.freeze({
