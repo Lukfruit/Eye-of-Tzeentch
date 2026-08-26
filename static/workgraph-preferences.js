@@ -81,18 +81,6 @@
     applyStatusRollup();
   }
 
-  function simplifyInspector() {
-    const inspector = document.querySelector("#workgraph-inspector-content");
-    if (!inspector) return;
-
-    const heading = inspector.querySelector(":scope > h3");
-    if (heading) heading.remove();
-
-    const titleField = inspector.querySelector("#wg-title");
-    const titleLabel = titleField?.closest(".data-field")?.querySelector("label");
-    if (titleLabel) titleLabel.textContent = "TITLE · EDITABLE · AUTO-SAVES";
-  }
-
   function applyFadePreference() {
     document.body.classList.toggle("wg-fade-expanded", fadeExpanded);
     const button = document.querySelector(".workgraph-preference[data-preference=\"fade-expanded\"]");
@@ -101,7 +89,6 @@
       button.setAttribute("aria-pressed", String(fadeExpanded));
     }
     setExpandedMarkers();
-    simplifyInspector();
   }
 
   function createPreferenceControl() {
@@ -149,13 +136,6 @@
         if (hasStructuralChange) setExpandedMarkers();
       });
       observer.observe(tree, { childList: true, subtree: true });
-    }
-
-    const inspector = document.querySelector("#workgraph-inspector-content");
-    if (inspector) {
-      const inspectorObserver = new MutationObserver(() => simplifyInspector());
-      inspectorObserver.observe(inspector, { childList: true, subtree: true });
-      simplifyInspector();
     }
   }
 
