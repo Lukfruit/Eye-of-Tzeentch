@@ -33,6 +33,11 @@ body.wg-fade-expanded .workgraph-node.expanded > .workgraph-content.selected {
   color: #42f5d4;
 }
 
+/* The title field is the single editable title control. */
+#workgraph-inspector-content > h3 {
+  display: none;
+}
+
 .workgraph-preference {
   width: 100%;
   display: grid;
