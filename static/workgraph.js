@@ -241,8 +241,8 @@ function renderInspector() {
 
   host.innerHTML = `
     <div class="panel-kicker"><span>02</span> WORK INSPECTOR</div>
+    <h3 class="workgraph-inspector-title">${wgEscape(node.title)}</h3>
     <div class="data-field"><label>GRAPH ID</label><p class="workgraph-readout">${WorkGraphModel.graphIdForNode(workGraphState.nodes, node.id)}</p></div>
-    <div class="data-field"><label>TITLE · EDITABLE · AUTO-SAVES</label><input id="wg-title" class="workgraph-notes" style="min-height:42px" type="text" value="${wgEscape(node.title)}" placeholder="Work item title"></div>
     <div class="data-field"><label>WHY</label><textarea id="wg-why" class="workgraph-notes" placeholder="Why does this work exist?"></textarea></div>
     <div class="data-field"><label>NOTES</label><textarea id="wg-notes" class="workgraph-notes" placeholder="Optional context, evidence, decisions…"></textarea></div>
     <div class="data-field"><label>STATUS · SOURCE</label><select id="wg-status" class="workgraph-notes" style="min-height:42px"></select></div>
@@ -265,11 +265,6 @@ function renderInspector() {
     return option;
   }));
 
-  wg$("#wg-title").addEventListener("change", (event) => {
-    const title = event.target.value.trim();
-    if (!title) { event.target.value = node.title || ""; return; }
-    updateNode(node.id, { title }, { render: true });
-  });
   wg$("#wg-why").addEventListener("input", (event) => updateNode(node.id, { why: event.target.value }));
   wg$("#wg-notes").addEventListener("input", (event) => updateNode(node.id, { notes: event.target.value }));
   statusSelect.addEventListener("change", (event) => updateNode(node.id, { status: event.target.value }, { render: true }));
@@ -318,18 +313,13 @@ function ensureFadePreferenceControl() {
 
 // One-way renderer boundary: state -> DOM. Never introduce a MutationObserver
 // here whose callback calls renderWorkGraph() or mutates #workgraph-tree; that
-// creates the classic mutation -> observer -> mutation feedback loop.
+// creates an observer -> mutation -> observer loop.
 function renderWorkGraph() {
   const tree = wg$("#workgraph-tree");
   if (!tree) return;
-
-  const validationErrors = WorkGraphModel.validate(workGraphState.nodes);
-  if (validationErrors.length) console.warn("[workgraph] graph validation:", validationErrors);
-
   tree.replaceChildren();
   WorkGraphModel.childrenOf(workGraphState.nodes, null).forEach((node) => tree.appendChild(renderNode(node)));
   renderInspector();
-  applyFadePreference();
 }
 
 function setWorkGraphActive(active) {
@@ -339,14 +329,22 @@ function setWorkGraphActive(active) {
   if (active) renderWorkGraph();
 }
 
+function ensureWorkGraphPreferences() {
+  if (document.querySelector('script[data-workgraph-preferences]')) return;
+  const script = document.createElement("script");
+  script.src = "/workgraph-preferences.js";
+  script.dataset.workgraphPreferences = "true";
+  document.body.appendChild(script);
+}
+
 async function initWorkGraph() {
+  ensureWorkGraphPreferences();
   ensureWorkGraphStyles();
   ensureFadePreferenceControl();
+  applyFadePreference();
   workGraphState.projectPath = currentProjectPath();
   workGraphState.nodes = await loadWorkGraph();
   if (!workGraphState.nodes.length) workGraphState.nodes = structuredClone(workGraphDefaults);
-  const validationErrors = WorkGraphModel.validate(workGraphState.nodes);
-  if (validationErrors.length) console.warn("[workgraph] loaded graph validation:", validationErrors);
   workGraphState.expanded.add(workGraphState.nodes[0]?.id || "root-project");
 
   wg$("#workgraph-add-root")?.addEventListener("click", () => addChild(null, "goal"));
