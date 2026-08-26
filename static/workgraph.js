@@ -32,13 +32,12 @@ function wgEscape(value = "") {
   return String(value).replace(/[&<>'\"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '\"': "&quot;" }[c]));
 }
 
-// ROOT:// is shared with the code-analysis view. Prefer the URL when it has an
-// explicit project path, otherwise use the visible input value. This keeps a
-// URL-driven launch and an interactive folder change aligned.
+// ROOT:// is shared with the code-analysis view. The visible input is the
+// authoritative interactive value; the launch URL is only a fallback.
 function currentProjectPath() {
-  const queryPath = new URLSearchParams(window.location.search).get("path")?.trim();
   const inputPath = wg$("#project-path")?.value?.trim();
-  return queryPath || inputPath || "";
+  const queryPath = new URLSearchParams(window.location.search).get("path")?.trim();
+  return inputPath || queryPath || "";
 }
 
 async function loadWorkGraph() {
