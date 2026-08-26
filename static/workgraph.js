@@ -25,7 +25,6 @@ const WORKGRAPH_PREF_KEY = "cyber-soul-workgraph-fade-expanded";
 let saveTimer = null;
 let fadeExpanded = localStorage.getItem(WORKGRAPH_PREF_KEY) !== "false";
 let projectReloadInFlight = null;
-let lastObservedProjectPath = "";
 
 function wg$(selector) { return document.querySelector(selector); }
 function wgEscape(value = "") {
@@ -40,11 +39,12 @@ function currentProjectPath() {
   return inputPath || queryPath || "";
 }
 
-async function loadWorkGraph() {
-  workGraphState.projectPath = currentProjectPath();
-  if (!workGraphState.projectPath) return structuredClone(workGraphDefaults);
+async function loadWorkGraph(pathOverride = "") {
+  const path = String(pathOverride || currentProjectPath()).trim();
+  workGraphState.projectPath = path;
+  if (!path) return structuredClone(workGraphDefaults);
   try {
-    const response = await fetch(`/api/workgraph?path=${encodeURIComponent(workGraphState.projectPath)}`, { cache: "no-store" });
+    const response = await fetch(`/api/workgraph?path=${encodeURIComponent(path)}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const parsed = await response.json();
     if (Array.isArray(parsed.nodes) && parsed.nodes.length) return parsed.nodes;
@@ -86,27 +86,15 @@ async function reloadForProject(pathOverride = "") {
 
   projectReloadInFlight = (async () => {
     workGraphState.projectPath = nextPath;
-    workGraphState.nodes = await loadWorkGraph();
+    workGraphState.nodes = await loadWorkGraph(nextPath);
     workGraphState.selected = null;
     workGraphState.expanded = new Set([workGraphState.nodes[0]?.id || "root-project"]);
-    lastObservedProjectPath = nextPath;
     renderWorkGraph();
   })().finally(() => {
     projectReloadInFlight = null;
   });
 
   return projectReloadInFlight;
-}
-
-// The code-analysis view owns the ROOT:// form, so Work Graph cannot rely on a
-// particular submit/change event ordering. We explicitly synchronize the path.
-// Polling only compares two strings; the graph is reloaded only when the path
-// actually changes. This is intentionally simpler and safer than observing the
-// DOM or trying to hook into the scanner's internal lifecycle.
-function syncProjectPath() {
-  const nextPath = currentProjectPath();
-  if (!nextPath || nextPath === lastObservedProjectPath) return;
-  void reloadForProject(nextPath);
 }
 
 function selectedNode() {
@@ -358,19 +346,24 @@ function setWorkGraphActive(active) {
   document.body.classList.toggle("workgraph-active", active);
   wg$("#workgraph-view")?.classList.toggle("active", active);
   document.querySelectorAll(".workgraph-tab").forEach((button) => button.classList.toggle("active", button.dataset.view === (active ? "workgraph" : "analysis")));
-  if (active) {
-    syncProjectPath();
-    renderWorkGraph();
-  }
+  if (active) renderWorkGraph();
 }
 
-function ensureWorkGraphStyles() {
-  if (document.querySelector('link[data-workgraph-preferences]')) return;
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = "/workgraph-preferences.css";
-  link.dataset.workgraphPreferences = "true";
-  document.head.appendChild(link);
+function bridgeProjectScan() {
+  const originalScanProject = window.scanProject;
+  if (typeof originalScanProject !== "function" || originalScanProject.__workGraphBridge) return;
+
+  const bridgedScanProject = async function bridgedScanProject(path, ...args) {
+    const result = await originalScanProject.call(this, path, ...args);
+    const selectedPath = String(path || currentProjectPath()).trim();
+    await reloadForProject(selectedPath);
+    document.dispatchEvent(new CustomEvent("cyber-soul:project-changed", {
+      detail: { path: selectedPath },
+    }));
+    return result;
+  };
+  bridgedScanProject.__workGraphBridge = true;
+  window.scanProject = bridgedScanProject;
 }
 
 function initWorkGraph() {
@@ -378,16 +371,19 @@ function initWorkGraph() {
   ensureFadePreferenceControl();
   applyFadePreference();
   workGraphState.projectPath = "";
-  lastObservedProjectPath = "";
 
   wg$("#workgraph-add-root")?.addEventListener("click", () => addChild(null, "goal"));
   document.querySelectorAll(".workgraph-tab").forEach((button) => button.addEventListener("click", () => setWorkGraphActive(button.dataset.view === "workgraph")));
-  wg$("#project-path")?.addEventListener("input", syncProjectPath);
-  wg$("#project-path")?.addEventListener("change", syncProjectPath);
+  wg$("#project-path")?.addEventListener("change", () => { void reloadForProject(currentProjectPath()); });
+  document.addEventListener("cyber-soul:project-changed", (event) => {
+    const path = event.detail?.path;
+    if (path) void reloadForProject(path);
+  });
 
-  // A small path synchronizer bridges changes made by the scanner's folder
-  // picker/form without creating a DOM mutation observer.
-  window.setInterval(syncProjectPath, 400);
+  // app.js loads immediately before DOMContentLoaded and owns the scanner.
+  // Wrap its public scan entry point so Work Graph follows actual project
+  // changes instead of polling the DOM for them.
+  bridgeProjectScan();
   void reloadForProject(currentProjectPath());
 }
 
